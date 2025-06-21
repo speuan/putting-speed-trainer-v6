@@ -1,6 +1,7 @@
 import { CameraController } from './camera/CameraController.js';
 import { UIController } from './ui/UIController.js';
 import { MarkerTracker } from './tracking/MarkerTracker.js';
+import { lineIntersect } from './utils/geometry.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const videoElement = document.getElementById('video');
@@ -28,11 +29,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Main Animation Loop ---
     let isMarkerSetupActive = false;
+    let hasCrossedStart = false;
+    let hasCrossedEnd = false;
+
     function animationLoop() {
         const state = tracker.getState();
 
         if (state.state === 'ARMED') {
             tracker.trackBall(videoElement);
+
+            const { ball, ballPrevious, markers } = tracker.getState();
+
+            // Check for line crossings if the ball has moved
+            if (ballPrevious && !hasCrossedEnd) {
+                const ballPath = { p1: ballPrevious, p2: ball };
+                
+                // Check start line
+                if (!hasCrossedStart) {
+                    const startLine = { p1: markers[0], p2: markers[1] };
+                    if (lineIntersect(ballPath.p1, ballPath.p2, startLine.p1, startLine.p2)) {
+                        hasCrossedStart = true;
+                        ui.updateStatus('Start line crossed!');
+                        console.log('Start line crossed');
+                    }
+                }
+
+                // Check end line (only if start has been crossed)
+                if (hasCrossedStart) {
+                    const endLine = { p1: markers[2], p2: markers[3] };
+                    if (lineIntersect(ballPath.p1, ballPath.p2, endLine.p1, endLine.p2)) {
+                        hasCrossedEnd = true;
+                        ui.updateStatus('Finished!');
+                        console.log('End line crossed');
+                    }
+                }
+            }
         }
 
         if (isMarkerSetupActive || state.state === 'ARMED') {
@@ -75,6 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupMarkersBtn.addEventListener('click', async () => {
         isMarkerSetupActive = true;
+        hasCrossedStart = false;
+        hasCrossedEnd = false;
         ui.startMarkerSetup();
         ui.promptForMarker(0);
 
