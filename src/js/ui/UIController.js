@@ -97,16 +97,17 @@ export class UIController {
     }
 
     drawLines(markers) {
-        this.ctx.strokeStyle = 'rgba(255, 255, 0, 0.7)'; // Semi-transparent yellow
         this.ctx.lineWidth = 3;
         
-        // Draw start line
+        // Draw start line in green
+        this.ctx.strokeStyle = 'rgba(0, 255, 0, 0.7)';
         this.ctx.beginPath();
         this.ctx.moveTo(markers[0].x, markers[0].y);
         this.ctx.lineTo(markers[1].x, markers[1].y);
         this.ctx.stroke();
 
-        // Draw end line
+        // Draw end line in red
+        this.ctx.strokeStyle = 'rgba(255, 0, 0, 0.7)';
         this.ctx.beginPath();
         this.ctx.moveTo(markers[2].x, markers[2].y);
         this.ctx.lineTo(markers[3].x, markers[3].y);
