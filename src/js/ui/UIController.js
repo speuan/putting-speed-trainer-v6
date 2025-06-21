@@ -73,6 +73,11 @@ export class UIController {
             state.markers.forEach(marker => this.drawMarker(marker));
         }
 
+        // Draw the start and end lines if all markers are set
+        if (state.markers && state.markers.length === 4) {
+            this.drawLines(state.markers);
+        }
+
         // Draw the loupe if it's active
         if (state.loupe) {
             this.drawLoupe(state.loupe.x, state.loupe.y, state.videoElement);
@@ -89,6 +94,23 @@ export class UIController {
         this.ctx.strokeStyle = 'lime';
         this.ctx.lineWidth = 2;
         this.ctx.strokeRect(point.x - size / 2, point.y - size / 2, size, size);
+    }
+
+    drawLines(markers) {
+        this.ctx.strokeStyle = 'rgba(255, 255, 0, 0.7)'; // Semi-transparent yellow
+        this.ctx.lineWidth = 3;
+        
+        // Draw start line
+        this.ctx.beginPath();
+        this.ctx.moveTo(markers[0].x, markers[0].y);
+        this.ctx.lineTo(markers[1].x, markers[1].y);
+        this.ctx.stroke();
+
+        // Draw end line
+        this.ctx.beginPath();
+        this.ctx.moveTo(markers[2].x, markers[2].y);
+        this.ctx.lineTo(markers[3].x, markers[3].y);
+        this.ctx.stroke();
     }
 
     drawLoupe(x, y, videoElement, magnification = 3) {
