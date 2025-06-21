@@ -18,6 +18,7 @@ export class MarkerTracker {
         return {
             markers: this.markers,
             ball: this.ball,
+            ballPrevious: this.ballPrevious,
             loupe: this.currentTouch,
             state: this.state,
         };
@@ -133,7 +134,8 @@ export class MarkerTracker {
 
         const bestMatch = this._findBestMatch(currentFrameData, this.ballRegion, predictedPosition, searchRadius);
         
-        this.ballPrevious = this.ball; // Update the previous position
+        // Create a copy of the current ball position before updating it
+        this.ballPrevious = { ...this.ball }; 
         this.ball = bestMatch; // Update the current position
     }
 

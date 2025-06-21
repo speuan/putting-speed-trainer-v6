@@ -38,10 +38,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (state.state === 'ARMED') {
             tracker.trackBall(videoElement);
 
+            // Get the updated state after tracking
             const { ball, ballPrevious, markers } = tracker.getState();
 
             // Check for line crossings if the ball has moved
-            if (ballPrevious && !hasCrossedEnd) {
+            if (ball && ballPrevious && !hasCrossedEnd) {
                 const ballPath = { p1: ballPrevious, p2: ball };
                 
                 // Check start line
