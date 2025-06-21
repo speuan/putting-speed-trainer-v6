@@ -6,12 +6,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const videoElement = document.getElementById('video');
     const canvasElement = document.getElementById('canvas');
     const startCameraBtn = document.getElementById('start-camera-btn');
+    const switchCameraBtn = document.getElementById('switch-camera-btn');
     const setupMarkersBtn = document.getElementById('setup-markers-btn');
     const instructionsEl = document.getElementById('instructions');
 
     const camera = new CameraController(videoElement);
     const ui = new UIController({
         startCameraBtn,
+        switchCameraBtn,
         setupMarkersBtn,
         instructionsEl,
         canvas: canvasElement
@@ -27,6 +29,15 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Failed to start camera:', error);
             instructionsEl.textContent = 'Could not start camera. Please check permissions.';
+        }
+    });
+
+    switchCameraBtn.addEventListener('click', async () => {
+        try {
+            await camera.switchCamera();
+        } catch (error) {
+            console.error('Failed to switch camera:', error);
+            instructionsEl.textContent = 'Could not switch camera.';
         }
     });
 

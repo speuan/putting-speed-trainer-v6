@@ -1,6 +1,7 @@
 export class UIController {
     constructor(options) {
         this.startCameraBtn = options.startCameraBtn;
+        this.switchCameraBtn = options.switchCameraBtn;
         this.setupMarkersBtn = options.setupMarkersBtn;
         this.instructionsEl = options.instructionsEl;
         this.canvas = options.canvas;
@@ -9,6 +10,7 @@ export class UIController {
 
     onCameraStarted() {
         this.startCameraBtn.disabled = true;
+        this.switchCameraBtn.disabled = false;
         this.setupMarkersBtn.disabled = false;
         this.instructionsEl.textContent = 'Camera started. Click "Setup Markers" to begin.';
     }
