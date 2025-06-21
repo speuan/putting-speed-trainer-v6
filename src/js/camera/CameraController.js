@@ -16,6 +16,7 @@ export class CameraController {
         });
 
         this.videoElement.srcObject = stream;
+        this.videoElement.play();
         
         return new Promise((resolve) => {
             this.videoElement.onloadedmetadata = () => {
