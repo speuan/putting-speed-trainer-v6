@@ -122,10 +122,16 @@ export class MarkerTracker {
         const velocityY = this.ball.y - this.ballPrevious.y;
         const velocity = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
 
+        // Predict the next position based on the current velocity
+        const predictedPosition = {
+            x: this.ball.x + velocityX,
+            y: this.ball.y + velocityY,
+        };
+
         // Base search radius + a factor of the velocity
         const searchRadius = 10 + Math.ceil(velocity);
 
-        const bestMatch = this._findBestMatch(currentFrameData, this.ballRegion, this.ball, searchRadius);
+        const bestMatch = this._findBestMatch(currentFrameData, this.ballRegion, predictedPosition, searchRadius);
         
         this.ballPrevious = this.ball; // Update the previous position
         this.ball = bestMatch; // Update the current position
@@ -174,12 +180,12 @@ export class MarkerTracker {
         console.log('Finished drift check. Markers updated.');
     }
 
-    _findBestMatch(frameData, templateData, lastPosition, searchRadius = 10) {
+    _findBestMatch(frameData, templateData, searchCenter, searchRadius = 10) {
         let bestMatch = { x: 0, y: 0, score: Infinity };
 
-        // Calculate the expected top-left corner from the last known center position
-        const expectedX = lastPosition.x - templateData.width / 2;
-        const expectedY = lastPosition.y - templateData.height / 2;
+        // Calculate the expected top-left corner from the search center position
+        const expectedX = searchCenter.x - templateData.width / 2;
+        const expectedY = searchCenter.y - templateData.height / 2;
 
         // Define the search area for the top-left corner
         const startX = Math.round(expectedX - searchRadius);
