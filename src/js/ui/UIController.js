@@ -47,23 +47,29 @@ export class UIController {
         });
     }
 
-    drawLoupe(x, y, videoElement, existingMarkers = [], magnification = 3) {
-        const loupeSize = 150; // The size of the loupe display on canvas
-        const sourceSize = loupeSize / magnification; // The size of the region to copy from the video
-
+    render(state) {
         this.clearCanvas();
-        
-        // Redraw existing markers first so they are under the loupe
-        existingMarkers.forEach(marker => this.drawMarker(marker));
 
-        // --- Loupe Drawing Logic ---
-        const yOffset = -100; // Draw the loupe 100px above the touch point
+        // Draw existing markers
+        if (state.markers) {
+            state.markers.forEach(marker => this.drawMarker(marker));
+        }
+
+        // Draw the loupe if it's active
+        if (state.loupe) {
+            this.drawLoupe(state.loupe.x, state.loupe.y, state.videoElement);
+        }
+    }
+
+    drawLoupe(x, y, videoElement, magnification = 3) {
+        const loupeSize = 150;
+        const sourceSize = loupeSize / magnification;
+        const yOffset = -100;
         const loupeCenterX = x;
         const loupeCenterY = y + yOffset;
 
         this.ctx.save();
         
-        // Draw a "tail" connecting the touch point to the loupe
         this.ctx.beginPath();
         this.ctx.moveTo(x, y);
         this.ctx.lineTo(loupeCenterX, loupeCenterY);
@@ -71,7 +77,6 @@ export class UIController {
         this.ctx.lineWidth = 1;
         this.ctx.stroke();
 
-        // Create a circular clipping path for the loupe
         this.ctx.beginPath();
         this.ctx.arc(loupeCenterX, loupeCenterY, loupeSize / 2, 0, Math.PI * 2);
         this.ctx.lineWidth = 3;
@@ -79,22 +84,14 @@ export class UIController {
         this.ctx.stroke();
         this.ctx.clip();
 
-        // Draw the magnified video content (source is original touch, destination is the loupe)
         this.ctx.drawImage(
             videoElement,
-            x - (sourceSize / 2), // source x
-            y - (sourceSize / 2), // source y
-            sourceSize,           // source width
-            sourceSize,           // source height
-            loupeCenterX - (loupeSize / 2),  // destination x
-            loupeCenterY - (loupeSize / 2),  // destination y
-            loupeSize,            // destination width
-            loupeSize             // destination height
+            x - (sourceSize / 2), y - (sourceSize / 2), sourceSize, sourceSize,
+            loupeCenterX - (loupeSize / 2), loupeCenterY - (loupeSize / 2), loupeSize, loupeSize
         );
 
         this.ctx.restore();
 
-        // Draw crosshairs in the center of the loupe
         this.ctx.beginPath();
         this.ctx.moveTo(loupeCenterX - 10, loupeCenterY);
         this.ctx.lineTo(loupeCenterX + 10, loupeCenterY);
@@ -103,11 +100,6 @@ export class UIController {
         this.ctx.strokeStyle = 'red';
         this.ctx.lineWidth = 2;
         this.ctx.stroke();
-    }
-
-    hideLoupe(existingMarkers = []) {
-        this.clearCanvas();
-        existingMarkers.forEach(marker => this.drawMarker(marker));
     }
 
     clearCanvas() {

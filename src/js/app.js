@@ -20,12 +20,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     const tracker = new MarkerTracker(videoElement, canvasElement, ui);
 
+    // --- Main Animation Loop ---
+    let isMarkerSetupActive = false;
+    function animationLoop() {
+        if (isMarkerSetupActive) {
+            const state = tracker.getState();
+            state.videoElement = videoElement; // Add video element to state for rendering
+            ui.render(state);
+        }
+        requestAnimationFrame(animationLoop);
+    }
+    // --- End of Animation Loop ---
+
     startCameraBtn.addEventListener('click', async () => {
         try {
             await camera.start();
             canvasElement.width = videoElement.videoWidth;
             canvasElement.height = videoElement.videoHeight;
             ui.onCameraStarted();
+            requestAnimationFrame(animationLoop); // Start the animation loop
         } catch (error) {
             console.error('Failed to start camera:', error);
             instructionsEl.textContent = 'Could not start camera. Please check permissions.';
@@ -42,22 +55,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     setupMarkersBtn.addEventListener('click', async () => {
+        isMarkerSetupActive = true;
         ui.startMarkerSetup();
-        ui.clearCanvas();
-        ui.promptForMarker(0); // Prompt for the first marker
+        ui.promptForMarker(0);
 
         const progressCallback = (markers) => {
-            // Draw the most recently added marker
-            ui.drawMarker(markers[markers.length - 1]);
-            // If not yet 4, prompt for the next one
             if (markers.length < 4) {
                 ui.promptForMarker(markers.length);
+            } else {
+                ui.onSetupComplete();
+                isMarkerSetupActive = false;
             }
         };
-
-        tracker.startSetup(progressCallback).then(markers => {
-             console.log('Markers set at:', markers);
-             ui.onSetupComplete();
-        });
+        
+        tracker.startSetup(progressCallback);
     });
 }); 

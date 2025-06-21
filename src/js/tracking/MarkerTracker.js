@@ -7,6 +7,14 @@ export class MarkerTracker {
         this.markerRegions = [];
         this.isSetup = false;
         this.driftCheckInterval = null;
+        this.currentTouch = null;
+    }
+
+    getState() {
+        return {
+            markers: this.markers,
+            loupe: this.currentTouch,
+        };
     }
 
     startSetup(progressCallback) {
@@ -18,66 +26,50 @@ export class MarkerTracker {
             this.driftCheckInterval = null;
         }
 
-        return new Promise((resolve) => {
-            let animationFrameId = null;
-            let currentTouch = null;
-
-            const getTouchCoords = (event) => {
-                const rect = this.canvas.getBoundingClientRect();
-                const touch = event.touches[0] || event.changedTouches[0];
-                const scaleX = this.canvas.width / rect.width;
-                const scaleY = this.canvas.height / rect.height;
-                return {
-                    x: (touch.clientX - rect.left) * scaleX,
-                    y: (touch.clientY - rect.top) * scaleY,
-                };
+        const getTouchCoords = (event) => {
+            const rect = this.canvas.getBoundingClientRect();
+            const touch = event.touches[0] || event.changedTouches[0];
+            const scaleX = this.canvas.width / rect.width;
+            const scaleY = this.canvas.height / rect.height;
+            return {
+                x: (touch.clientX - rect.left) * scaleX,
+                y: (touch.clientY - rect.top) * scaleY,
             };
+        };
+        
+        const handleTouchStart = (event) => {
+            event.preventDefault();
+            this.currentTouch = getTouchCoords(event);
+        };
 
-            const loupeLoop = () => {
-                if (currentTouch) {
-                    this.uiController.drawLoupe(currentTouch.x, currentTouch.y, this.videoElement, this.markers);
-                    animationFrameId = requestAnimationFrame(loupeLoop);
-                }
-            };
+        const handleTouchMove = (event) => {
+            event.preventDefault();
+            this.currentTouch = getTouchCoords(event);
+        };
+
+        const handleTouchEnd = (event) => {
+            event.preventDefault();
+            const finalPosition = getTouchCoords(event);
+            this.markers.push(finalPosition);
+            this.currentTouch = null;
+
+            if (progressCallback) {
+                progressCallback(this.markers);
+            }
             
-            const handleTouchStart = (event) => {
-                event.preventDefault();
-                currentTouch = getTouchCoords(event);
-                animationFrameId = requestAnimationFrame(loupeLoop);
-            };
+            if (this.markers.length === 4) {
+                this.canvas.removeEventListener('touchstart', handleTouchStart);
+                this.canvas.removeEventListener('touchmove', handleTouchMove);
+                this.canvas.removeEventListener('touchend', handleTouchEnd);
+                this.captureMarkerRegions();
+                this.isSetup = true;
+                this.startDriftDetection();
+            }
+        };
 
-            const handleTouchMove = (event) => {
-                event.preventDefault();
-                currentTouch = getTouchCoords(event);
-            };
-
-            const handleTouchEnd = (event) => {
-                event.preventDefault();
-                cancelAnimationFrame(animationFrameId);
-                const finalPosition = getTouchCoords(event);
-                this.markers.push(finalPosition);
-
-                this.uiController.hideLoupe(this.markers);
-
-                if (progressCallback) {
-                    progressCallback(this.markers);
-                }
-                
-                if (this.markers.length === 4) {
-                    this.canvas.removeEventListener('touchstart', handleTouchStart);
-                    this.canvas.removeEventListener('touchmove', handleTouchMove);
-                    this.canvas.removeEventListener('touchend', handleTouchEnd);
-                    this.captureMarkerRegions();
-                    this.isSetup = true;
-                    this.startDriftDetection();
-                    resolve(this.markers);
-                }
-            };
-
-            this.canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-            this.canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-            this.canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
-        });
+        this.canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+        this.canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+        this.canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
     }
 
     captureMarkerRegions() {
