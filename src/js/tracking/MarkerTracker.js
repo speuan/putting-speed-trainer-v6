@@ -105,6 +105,20 @@ export class MarkerTracker {
         console.log('Ball template captured.');
     }
 
+    trackBall(videoElement) {
+        if (!this.isSetup || !this.ballRegion) return;
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = videoElement.videoWidth;
+        tempCanvas.height = videoElement.videoHeight;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
+        const currentFrameData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+
+        const bestMatch = this._findBestMatch(currentFrameData, this.ballRegion, this.ball);
+        this.ball = bestMatch; // Update the ball's position
+    }
+
     captureMarkerRegions() {
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = this.videoElement.videoWidth;

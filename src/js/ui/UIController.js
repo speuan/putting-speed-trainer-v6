@@ -77,6 +77,18 @@ export class UIController {
         if (state.loupe) {
             this.drawLoupe(state.loupe.x, state.loupe.y, state.videoElement);
         }
+
+        // Draw the tracked ball if the system is armed
+        if (state.ball && (state.state === 'ARMED' || state.state === 'TRACKING')) {
+            this.drawTrackedBall(state.ball);
+        }
+    }
+
+    drawTrackedBall(point) {
+        const size = 30; // The size of the tracking box
+        this.ctx.strokeStyle = 'lime';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(point.x - size / 2, point.y - size / 2, size, size);
     }
 
     drawLoupe(x, y, videoElement, magnification = 3) {

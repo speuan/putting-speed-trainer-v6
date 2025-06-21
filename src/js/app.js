@@ -29,10 +29,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Main Animation Loop ---
     let isMarkerSetupActive = false;
     function animationLoop() {
-        if (isMarkerSetupActive) {
-            const state = tracker.getState();
-            state.videoElement = videoElement; // Add video element to state for rendering
-            ui.render(state);
+        const state = tracker.getState();
+
+        if (state.state === 'ARMED') {
+            tracker.trackBall(videoElement);
+        }
+
+        if (isMarkerSetupActive || state.state === 'ARMED') {
+            const updatedState = tracker.getState();
+            updatedState.videoElement = videoElement;
+            ui.render(updatedState);
         }
         requestAnimationFrame(animationLoop);
     }
