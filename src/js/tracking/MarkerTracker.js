@@ -93,12 +93,17 @@ export class MarkerTracker {
 
     _findBestMatch(frameData, templateData, lastPosition) {
         const searchRadius = 10; // Search in a 20x20 pixel area around the last position
-        let bestMatch = { x: lastPosition.x, y: lastPosition.y, score: Infinity };
+        let bestMatch = { x: 0, y: 0, score: Infinity };
 
-        const startX = Math.round(lastPosition.x - searchRadius);
-        const startY = Math.round(lastPosition.y - searchRadius);
-        const endX = Math.round(lastPosition.x + searchRadius);
-        const endY = Math.round(lastPosition.y + searchRadius);
+        // Calculate the expected top-left corner from the last known center position
+        const expectedX = lastPosition.x - templateData.width / 2;
+        const expectedY = lastPosition.y - templateData.height / 2;
+
+        // Define the search area for the top-left corner
+        const startX = Math.round(expectedX - searchRadius);
+        const startY = Math.round(expectedY - searchRadius);
+        const endX = Math.round(expectedX + searchRadius);
+        const endY = Math.round(expectedY + searchRadius);
 
         for (let y = startY; y <= endY; y++) {
             for (let x = startX; x <= endX; x++) {
@@ -120,12 +125,15 @@ export class MarkerTracker {
                 
                 if (ssd < bestMatch.score) {
                     bestMatch.score = ssd;
-                    // The best match position is the center of the template
-                    bestMatch.x = x + templateData.width / 2;
-                    bestMatch.y = y + templateData.height / 2;
+                    bestMatch.x = x;
+                    bestMatch.y = y;
                 }
             }
         }
-        return { x: bestMatch.x, y: bestMatch.y };
+        // Return the center of the best-matched region
+        return { 
+            x: bestMatch.x + templateData.width / 2, 
+            y: bestMatch.y + templateData.height / 2 
+        };
     }
 } 
