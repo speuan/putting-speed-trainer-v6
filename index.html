@@ -3,74 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Golf Putting Speed Trainer - Analyze your putting speed">
-    <meta name="theme-color" content="#4CAF50">
-    <title>Golf Putting Speed Trainer</title>
+    <title>Marker Detection Setup</title>
     <link rel="stylesheet" href="src/css/styles.css">
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" href="assets/icons/favicon.ico" type="image/x-icon">
-    <!-- TensorFlow.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0"></script>
+    <meta name="theme-color" content="#000000">
 </head>
 <body>
-    <header>
-        <h1>Golf Putting Speed Trainer</h1>
-    </header>
-    
-    <main class="main-landscape">
-        <div class="camera-container">
-            <video id="camera-feed" autoplay playsinline></video>
-            <canvas id="processing-canvas" style="display:none;"></canvas>
-            <canvas id="display-canvas"></canvas>
-            <!-- Setup overlay will be added dynamically by JavaScript -->
+    <h1>Marker Detection</h1>
+    <div class="container">
+        <div class="video-container">
+            <video id="video" playsinline autoplay muted></video>
+            <canvas id="canvas"></canvas>
         </div>
-        <div class="side-panel">
-            <!-- Setup instructions (shown during marker setup) -->
-            <div id="setup-instructions-container" class="setup-instructions-container" style="display:none;">
-                <p id="setup-instructions" class="setup-instructions"></p>
-            </div>
-            <div class="camera-controls">
-                <button id="start-camera">Start Camera</button>
-                <button id="capture-button" disabled>Capture Image</button>
-                <button id="load-sample-button">Load Sample Image</button>
-                <button id="setup-markers-button">Setup Marker</button>
-                <button id="recalibrate-button" style="display:none;">Recalibrate</button>
-                <button id="analyze-button" style="display:none;">Analyze Capture</button>
-                <button id="back-to-live-button" style="display:none;">Back to Live Feed</button>
-                <button id="new-capture-button" style="display:none;">New Capture</button>
-                <!-- Setup mode buttons -->
-                <button id="confirm-setup-button" style="display:none;">Confirm Setup</button>
-                <button id="cancel-setup-button" style="display:none;">Cancel Setup</button>
-            </div>
-            <!-- Debug information section -->
-            <div id="debug-log-container" class="debug-log-container">
-                <h3>Debug Information</h3>
-                <div id="debug-log" class="debug-log"></div>
-                <button id="clear-debug-log" class="small-button">Clear Log</button>
-            </div>
+        <div class="controls">
+            <button id="start-camera-btn">Start Camera</button>
+            <button id="setup-markers-btn" disabled>Setup Markers</button>
+            <p id="instructions"></p>
         </div>
-    </main>
-    
-    <footer>
-        <p>Golf Putting Speed Trainer &copy; 2023</p>
-    </footer>
-
-    <!-- Load scripts -->
-    <script src="src/js/camera/camera-controller.js?v=4"></script>
-    <script src="src/js/detection/ball-detector.js?v=4"></script>
-    <script src="src/js/calculation/speed-calculator.js?v=4"></script>
-    <script src="src/js/tracking/corner-tracker.js?v=4"></script>
-    <script src="src/js/ui/ui-controller.js?v=4"></script>
-    <script src="src/js/app.js?v=4"></script>
+    </div>
+    <script type="module" src="src/js/app.js"></script>
     <script>
-        // Register service worker for PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js')
-                    .then(reg => console.log('Service worker registered!', reg))
-                    .catch(err => console.log('Service worker registration failed:', err));
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed: ', error);
+                    });
             });
         }
     </script>
 </body>
-</html> 
+</html>
