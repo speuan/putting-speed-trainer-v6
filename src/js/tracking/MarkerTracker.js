@@ -9,6 +9,7 @@ export class MarkerTracker {
         this.driftCheckInterval = null;
         this.currentTouch = null;
         this.ball = null;
+        this.ballPrevious = null;
         this.ballRegion = null;
         this.state = 'IDLE'; // IDLE, AWAITING_MARKERS, AWAITING_BALL, ARMED
     }
@@ -73,6 +74,7 @@ export class MarkerTracker {
                 }
             } else if (this.state === 'AWAITING_BALL') {
                 this.ball = finalPosition;
+                this.ballPrevious = finalPosition; // Initialize previous position
                 this.captureBallRegion();
                 this.isSetup = true;
                 this.state = 'ARMED';
@@ -115,8 +117,18 @@ export class MarkerTracker {
         tempCtx.drawImage(videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
         const currentFrameData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
 
-        const bestMatch = this._findBestMatch(currentFrameData, this.ballRegion, this.ball);
-        this.ball = bestMatch; // Update the ball's position
+        // Calculate velocity and set a dynamic search radius
+        const velocityX = this.ball.x - this.ballPrevious.x;
+        const velocityY = this.ball.y - this.ballPrevious.y;
+        const velocity = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
+
+        // Base search radius + a factor of the velocity
+        const searchRadius = 10 + Math.ceil(velocity);
+
+        const bestMatch = this._findBestMatch(currentFrameData, this.ballRegion, this.ball, searchRadius);
+        
+        this.ballPrevious = this.ball; // Update the previous position
+        this.ball = bestMatch; // Update the current position
     }
 
     captureMarkerRegions() {
@@ -162,8 +174,7 @@ export class MarkerTracker {
         console.log('Finished drift check. Markers updated.');
     }
 
-    _findBestMatch(frameData, templateData, lastPosition) {
-        const searchRadius = 10; // Search in a 20x20 pixel area around the last position
+    _findBestMatch(frameData, templateData, lastPosition, searchRadius = 10) {
         let bestMatch = { x: 0, y: 0, score: Infinity };
 
         // Calculate the expected top-left corner from the last known center position
