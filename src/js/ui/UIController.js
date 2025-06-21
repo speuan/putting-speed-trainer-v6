@@ -56,37 +56,50 @@ export class UIController {
         // Redraw existing markers first so they are under the loupe
         existingMarkers.forEach(marker => this.drawMarker(marker));
 
+        // --- Loupe Drawing Logic ---
+        const yOffset = -100; // Draw the loupe 100px above the touch point
+        const loupeCenterX = x;
+        const loupeCenterY = y + yOffset;
+
         this.ctx.save();
         
+        // Draw a "tail" connecting the touch point to the loupe
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, y);
+        this.ctx.lineTo(loupeCenterX, loupeCenterY);
+        this.ctx.strokeStyle = 'white';
+        this.ctx.lineWidth = 1;
+        this.ctx.stroke();
+
         // Create a circular clipping path for the loupe
         this.ctx.beginPath();
-        this.ctx.arc(x, y, loupeSize / 2, 0, Math.PI * 2);
+        this.ctx.arc(loupeCenterX, loupeCenterY, loupeSize / 2, 0, Math.PI * 2);
         this.ctx.lineWidth = 3;
         this.ctx.strokeStyle = 'white';
         this.ctx.stroke();
         this.ctx.clip();
 
-        // Draw the magnified video content
+        // Draw the magnified video content (source is original touch, destination is the loupe)
         this.ctx.drawImage(
             videoElement,
             x - (sourceSize / 2), // source x
             y - (sourceSize / 2), // source y
             sourceSize,           // source width
             sourceSize,           // source height
-            x - (loupeSize / 2),  // destination x
-            y - (loupeSize / 2),  // destination y
+            loupeCenterX - (loupeSize / 2),  // destination x
+            loupeCenterY - (loupeSize / 2),  // destination y
             loupeSize,            // destination width
             loupeSize             // destination height
         );
 
         this.ctx.restore();
 
-        // Draw crosshairs
+        // Draw crosshairs in the center of the loupe
         this.ctx.beginPath();
-        this.ctx.moveTo(x - 10, y);
-        this.ctx.lineTo(x + 10, y);
-        this.ctx.moveTo(x, y - 10);
-        this.ctx.lineTo(x, y + 10);
+        this.ctx.moveTo(loupeCenterX - 10, loupeCenterY);
+        this.ctx.lineTo(loupeCenterX + 10, loupeCenterY);
+        this.ctx.moveTo(loupeCenterX, loupeCenterY - 10);
+        this.ctx.lineTo(loupeCenterX, loupeCenterY + 10);
         this.ctx.strokeStyle = 'red';
         this.ctx.lineWidth = 2;
         this.ctx.stroke();
