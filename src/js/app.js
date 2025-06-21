@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const switchCameraBtn = document.getElementById('switch-camera-btn');
     const setupMarkersBtn = document.getElementById('setup-markers-btn');
     const instructionsEl = document.getElementById('instructions');
+    const statusIndicatorEl = document.getElementById('status-indicator');
+    const resultsContainerEl = document.getElementById('results-container');
+    const speedDisplayEl = document.getElementById('speed-display');
 
     const camera = new CameraController(videoElement);
     const ui = new UIController({
@@ -16,6 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
         switchCameraBtn,
         setupMarkersBtn,
         instructionsEl,
+        statusIndicatorEl,
+        resultsContainerEl,
+        speedDisplayEl,
         canvas: canvasElement
     });
     const tracker = new MarkerTracker(videoElement, canvasElement, ui);

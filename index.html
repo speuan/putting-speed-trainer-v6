@@ -20,8 +20,15 @@
             <button id="switch-camera-btn" disabled>Switch Camera</button>
             <button id="setup-markers-btn" disabled>Setup Markers</button>
             <p id="instructions"></p>
+            <div id="status-container">
+                Status: <span id="status-indicator">Idle</span>
+            </div>
+            <div id="results-container" style="display: none;">
+                Speed: <span id="speed-display">0.0</span> m/s
+            </div>
         </div>
     </div>
+    <video id="analysis-video" style="display:none;"></video>
     <script type="module" src="src/js/app.js"></script>
     <script>
         if ('serviceWorker' in navigator) {

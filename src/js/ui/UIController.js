@@ -4,6 +4,9 @@ export class UIController {
         this.switchCameraBtn = options.switchCameraBtn;
         this.setupMarkersBtn = options.setupMarkersBtn;
         this.instructionsEl = options.instructionsEl;
+        this.statusIndicatorEl = options.statusIndicatorEl;
+        this.resultsContainerEl = options.resultsContainerEl;
+        this.speedDisplayEl = options.speedDisplayEl;
         this.canvas = options.canvas;
         this.ctx = this.canvas.getContext('2d');
     }
@@ -13,12 +16,14 @@ export class UIController {
         this.switchCameraBtn.disabled = false;
         this.setupMarkersBtn.disabled = false;
         this.instructionsEl.textContent = 'Camera started. Click "Setup Markers" to begin.';
+        this.updateStatus('Ready');
     }
 
     startMarkerSetup() {
         this.setupMarkersBtn.disabled = true;
         this.instructionsEl.textContent = 'Click on the four corners of the putting area.';
         this.canvas.style.pointerEvents = 'auto'; 
+        this.updateStatus('Setting Markers');
     }
 
     promptForMarker(markerIndex) {
@@ -35,6 +40,7 @@ export class UIController {
     onSetupComplete() {
         this.instructionsEl.textContent = 'Marker setup complete. Monitoring for drift.';
         this.canvas.style.pointerEvents = 'none';
+        this.updateStatus('Monitoring');
     }
 
     drawTrackedMarkers(markers) {
@@ -104,5 +110,14 @@ export class UIController {
 
     clearCanvas() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+
+    updateStatus(text) {
+        this.statusIndicatorEl.textContent = text;
+    }
+
+    showResults(speed) {
+        this.speedDisplayEl.textContent = speed.toFixed(2);
+        this.resultsContainerEl.style.display = 'block';
     }
 } 

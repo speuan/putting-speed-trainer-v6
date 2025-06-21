@@ -26,4 +26,16 @@ video, canvas {
 
 canvas {
     pointer-events: none;
+}
+
+#status-container, #results-container {
+    margin-top: 15px;
+    font-size: 1.2em;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+#status-indicator {
+    font-weight: bold;
 } 
