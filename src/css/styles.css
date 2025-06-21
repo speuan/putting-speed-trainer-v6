@@ -13,7 +13,7 @@ body {
 .video-container {
     position: relative;
     width: 640px;
-    height: 480px;
+    /* height: 480px; */
 }
 
 video, canvas {

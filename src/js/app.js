@@ -37,6 +37,13 @@ document.addEventListener('DOMContentLoaded', () => {
             await camera.start();
             canvasElement.width = videoElement.videoWidth;
             canvasElement.height = videoElement.videoHeight;
+
+            // --- Aspect Ratio Correction ---
+            const videoContainer = document.querySelector('.video-container');
+            const aspectRatio = videoElement.videoWidth / videoElement.videoHeight;
+            videoContainer.style.height = `${videoContainer.clientWidth / aspectRatio}px`;
+            // --- End of Correction ---
+
             ui.onCameraStarted();
             requestAnimationFrame(animationLoop); // Start the animation loop
         } catch (error) {
