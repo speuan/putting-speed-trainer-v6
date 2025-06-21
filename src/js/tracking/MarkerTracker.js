@@ -29,12 +29,16 @@ export class MarkerTracker {
         const getTouchCoords = (event) => {
             const rect = this.canvas.getBoundingClientRect();
             const touch = event.touches[0] || event.changedTouches[0];
-            const scaleX = this.canvas.width / rect.width;
-            const scaleY = this.canvas.height / rect.height;
-            return {
-                x: (touch.clientX - rect.left) * scaleX,
-                y: (touch.clientY - rect.top) * scaleY,
-            };
+
+            // Get touch position in CSS pixels relative to the canvas
+            const cssX = touch.clientX - rect.left;
+            const cssY = touch.clientY - rect.top;
+            
+            // Convert from CSS pixels to canvas drawing buffer pixels
+            const canvasX = cssX * (this.canvas.width / this.canvas.clientWidth);
+            const canvasY = cssY * (this.canvas.height / this.canvas.clientHeight);
+
+            return { x: canvasX, y: canvasY };
         };
         
         const handleTouchStart = (event) => {
