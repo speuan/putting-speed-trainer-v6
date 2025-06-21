@@ -19,8 +19,15 @@ export class MarkerTracker {
         return new Promise((resolve) => {
             const clickHandler = (event) => {
                 const rect = this.canvas.getBoundingClientRect();
-                const x = event.clientX - rect.left;
-                const y = event.clientY - rect.top;
+
+                // Calculate the scale between the canvas's display size and its drawing buffer size
+                const scaleX = this.canvas.width / this.canvas.clientWidth;
+                const scaleY = this.canvas.height / this.canvas.clientHeight;
+
+                // Adjust the click coordinates by the scaling factors
+                const x = (event.clientX - rect.left) * scaleX;
+                const y = (event.clientY - rect.top) * scaleY;
+
                 const point = { x, y };
                 this.markers.push(point);
                 
