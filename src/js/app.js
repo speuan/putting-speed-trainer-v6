@@ -44,25 +44,18 @@ document.addEventListener('DOMContentLoaded', () => {
     setupMarkersBtn.addEventListener('click', async () => {
         ui.startMarkerSetup();
         ui.clearCanvas();
-        
-        for (let i = 0; i < 4; i++) {
-            ui.promptForMarker(i);
-            // This is a simplified way to wait for a click.
-            // A more robust solution would use a custom event or promise wrapper.
-            await new Promise(resolve => {
-                const listener = (event) => {
-                    const rect = canvasElement.getBoundingClientRect();
-                    const x = event.clientX - rect.left;
-                    const y = event.clientY - rect.top;
-                    ui.drawMarker({x, y});
-                    canvasElement.removeEventListener('click', listener);
-                    resolve();
-                };
-                canvasElement.addEventListener('click', listener);
-            });
-        }
-        
-        tracker.startSetup().then(markers => {
+        ui.promptForMarker(0); // Prompt for the first marker
+
+        const progressCallback = (markers) => {
+            // Draw the most recently added marker
+            ui.drawMarker(markers[markers.length - 1]);
+            // If not yet 4, prompt for the next one
+            if (markers.length < 4) {
+                ui.promptForMarker(markers.length);
+            }
+        };
+
+        tracker.startSetup(progressCallback).then(markers => {
              console.log('Markers set at:', markers);
              ui.onSetupComplete();
         });

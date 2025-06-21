@@ -8,7 +8,7 @@ export class MarkerTracker {
         this.driftCheckInterval = null;
     }
 
-    startSetup() {
+    startSetup(progressCallback) {
         this.markers = [];
         this.markerRegions = [];
         this.isSetup = false;
@@ -23,6 +23,10 @@ export class MarkerTracker {
                 const y = event.clientY - rect.top;
                 const point = { x, y };
                 this.markers.push(point);
+                
+                if (progressCallback) {
+                    progressCallback(this.markers);
+                }
                 
                 if (this.markers.length === 4) {
                     this.canvas.removeEventListener('click', clickHandler);
