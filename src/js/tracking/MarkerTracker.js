@@ -17,34 +17,66 @@ export class MarkerTracker {
             clearInterval(this.driftCheckInterval);
             this.driftCheckInterval = null;
         }
+
         return new Promise((resolve) => {
-            const clickHandler = (event) => {
+            let animationFrameId = null;
+            let currentTouch = null;
+
+            const getTouchCoords = (event) => {
                 const rect = this.canvas.getBoundingClientRect();
+                const touch = event.touches[0] || event.changedTouches[0];
+                const scaleX = this.canvas.width / rect.width;
+                const scaleY = this.canvas.height / rect.height;
+                return {
+                    x: (touch.clientX - rect.left) * scaleX,
+                    y: (touch.clientY - rect.top) * scaleY,
+                };
+            };
 
-                // Calculate the scale between the canvas's display size and its drawing buffer size
-                const scaleX = this.canvas.width / this.canvas.clientWidth;
-                const scaleY = this.canvas.height / this.canvas.clientHeight;
+            const loupeLoop = () => {
+                if (currentTouch) {
+                    this.uiController.drawLoupe(currentTouch.x, currentTouch.y, this.videoElement, this.markers);
+                    animationFrameId = requestAnimationFrame(loupeLoop);
+                }
+            };
+            
+            const handleTouchStart = (event) => {
+                event.preventDefault();
+                currentTouch = getTouchCoords(event);
+                animationFrameId = requestAnimationFrame(loupeLoop);
+            };
 
-                // Adjust the click coordinates by the scaling factors
-                const x = (event.clientX - rect.left) * scaleX;
-                const y = (event.clientY - rect.top) * scaleY;
+            const handleTouchMove = (event) => {
+                event.preventDefault();
+                currentTouch = getTouchCoords(event);
+            };
 
-                const point = { x, y };
-                this.markers.push(point);
-                
+            const handleTouchEnd = (event) => {
+                event.preventDefault();
+                cancelAnimationFrame(animationFrameId);
+                const finalPosition = getTouchCoords(event);
+                this.markers.push(finalPosition);
+
+                this.uiController.hideLoupe(this.markers);
+
                 if (progressCallback) {
                     progressCallback(this.markers);
                 }
                 
                 if (this.markers.length === 4) {
-                    this.canvas.removeEventListener('click', clickHandler);
+                    this.canvas.removeEventListener('touchstart', handleTouchStart);
+                    this.canvas.removeEventListener('touchmove', handleTouchMove);
+                    this.canvas.removeEventListener('touchend', handleTouchEnd);
                     this.captureMarkerRegions();
                     this.isSetup = true;
                     this.startDriftDetection();
                     resolve(this.markers);
                 }
             };
-            this.canvas.addEventListener('click', clickHandler);
+
+            this.canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+            this.canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+            this.canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
         });
     }
 

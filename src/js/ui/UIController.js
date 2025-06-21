@@ -47,6 +47,56 @@ export class UIController {
         });
     }
 
+    drawLoupe(x, y, videoElement, existingMarkers = [], magnification = 3) {
+        const loupeSize = 150; // The size of the loupe display on canvas
+        const sourceSize = loupeSize / magnification; // The size of the region to copy from the video
+
+        this.clearCanvas();
+        
+        // Redraw existing markers first so they are under the loupe
+        existingMarkers.forEach(marker => this.drawMarker(marker));
+
+        this.ctx.save();
+        
+        // Create a circular clipping path for the loupe
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, loupeSize / 2, 0, Math.PI * 2);
+        this.ctx.lineWidth = 3;
+        this.ctx.strokeStyle = 'white';
+        this.ctx.stroke();
+        this.ctx.clip();
+
+        // Draw the magnified video content
+        this.ctx.drawImage(
+            videoElement,
+            x - (sourceSize / 2), // source x
+            y - (sourceSize / 2), // source y
+            sourceSize,           // source width
+            sourceSize,           // source height
+            x - (loupeSize / 2),  // destination x
+            y - (loupeSize / 2),  // destination y
+            loupeSize,            // destination width
+            loupeSize             // destination height
+        );
+
+        this.ctx.restore();
+
+        // Draw crosshairs
+        this.ctx.beginPath();
+        this.ctx.moveTo(x - 10, y);
+        this.ctx.lineTo(x + 10, y);
+        this.ctx.moveTo(x, y - 10);
+        this.ctx.lineTo(x, y + 10);
+        this.ctx.strokeStyle = 'red';
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+    }
+
+    hideLoupe(existingMarkers = []) {
+        this.clearCanvas();
+        existingMarkers.forEach(marker => this.drawMarker(marker));
+    }
+
     clearCanvas() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
