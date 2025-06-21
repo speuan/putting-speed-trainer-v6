@@ -72,11 +72,19 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.startMarkerSetup();
         ui.promptForMarker(0);
 
-        const progressCallback = (markers) => {
-            if (markers.length < 4) {
-                ui.promptForMarker(markers.length);
-            } else {
+        const progressCallback = (tracker) => {
+            const state = tracker.getState();
+
+            if (state.state === 'AWAITING_MARKERS') {
+                const markerCount = state.markers.length;
+                if (markerCount < 4) {
+                    ui.promptForMarker(markerCount);
+                }
+            } else if (state.state === 'AWAITING_BALL') {
                 ui.onSetupComplete();
+                ui.promptForBall();
+            } else if (state.state === 'ARMED') {
+                ui.onArmingComplete();
                 isMarkerSetupActive = false;
             }
         };

@@ -38,9 +38,21 @@ export class UIController {
     }
 
     onSetupComplete() {
-        this.instructionsEl.textContent = 'Marker setup complete. Monitoring for drift.';
+        this.instructionsEl.textContent = 'Marker setup complete.';
         this.canvas.style.pointerEvents = 'none';
-        this.updateStatus('Monitoring');
+        this.updateStatus('Setup Complete');
+    }
+
+    promptForBall() {
+        this.instructionsEl.textContent = 'Tap the ball to arm the system.';
+        this.canvas.style.pointerEvents = 'auto';
+        this.updateStatus('Awaiting Ball');
+    }
+
+    onArmingComplete() {
+        this.instructionsEl.textContent = 'System Armed. Ready for putt.';
+        this.canvas.style.pointerEvents = 'none';
+        this.updateStatus('Armed');
     }
 
     drawTrackedMarkers(markers) {

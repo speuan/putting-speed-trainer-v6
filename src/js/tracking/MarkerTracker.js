@@ -8,18 +8,24 @@ export class MarkerTracker {
         this.isSetup = false;
         this.driftCheckInterval = null;
         this.currentTouch = null;
+        this.ball = null;
+        this.ballRegion = null;
+        this.state = 'IDLE'; // IDLE, AWAITING_MARKERS, AWAITING_BALL, ARMED
     }
 
     getState() {
         return {
             markers: this.markers,
+            ball: this.ball,
             loupe: this.currentTouch,
+            state: this.state,
         };
     }
 
     startSetup(progressCallback) {
         this.markers = [];
-        this.markerRegions = [];
+        this.ball = null;
+        this.state = 'AWAITING_MARKERS';
         this.isSetup = false;
         if (this.driftCheckInterval) {
             clearInterval(this.driftCheckInterval);
@@ -54,26 +60,49 @@ export class MarkerTracker {
         const handleTouchEnd = (event) => {
             event.preventDefault();
             const finalPosition = getTouchCoords(event);
-            this.markers.push(finalPosition);
             this.currentTouch = null;
 
-            if (progressCallback) {
-                progressCallback(this.markers);
-            }
-            
-            if (this.markers.length === 4) {
+            if (this.state === 'AWAITING_MARKERS') {
+                this.markers.push(finalPosition);
+                progressCallback(this); // Pass the whole tracker object
+
+                if (this.markers.length === 4) {
+                    this.state = 'AWAITING_BALL';
+                    this.captureMarkerRegions();
+                    progressCallback(this);
+                }
+            } else if (this.state === 'AWAITING_BALL') {
+                this.ball = finalPosition;
+                this.captureBallRegion();
+                this.isSetup = true;
+                this.state = 'ARMED';
+                progressCallback(this);
+
+                // Since setup is totally complete, we can remove listeners
                 this.canvas.removeEventListener('touchstart', handleTouchStart);
                 this.canvas.removeEventListener('touchmove', handleTouchMove);
                 this.canvas.removeEventListener('touchend', handleTouchEnd);
-                this.captureMarkerRegions();
-                this.isSetup = true;
-                this.startDriftDetection();
+                
+                // this.startDriftDetection(); // We will use a different tracking loop later
             }
         };
 
         this.canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
         this.canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
         this.canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+    }
+
+    captureBallRegion() {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = this.videoElement.videoWidth;
+        tempCanvas.height = this.videoElement.videoHeight;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(this.videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
+
+        const regionSize = 30; // Same size as markers for now
+        const region = tempCtx.getImageData(this.ball.x - regionSize / 2, this.ball.y - regionSize / 2, regionSize, regionSize);
+        this.ballRegion = region;
+        console.log('Ball template captured.');
     }
 
     captureMarkerRegions() {
