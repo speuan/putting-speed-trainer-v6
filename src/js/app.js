@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
         instructionsEl,
         canvas: canvasElement
     });
-    const tracker = new MarkerTracker(videoElement, canvasElement);
+    const tracker = new MarkerTracker(videoElement, canvasElement, ui);
 
     startCameraBtn.addEventListener('click', async () => {
         try {

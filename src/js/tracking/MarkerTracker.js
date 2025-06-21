@@ -1,7 +1,8 @@
 export class MarkerTracker {
-    constructor(videoElement, canvas) {
+    constructor(videoElement, canvas, uiController) {
         this.videoElement = videoElement;
         this.canvas = canvas;
+        this.uiController = uiController;
         this.markers = [];
         this.markerRegions = [];
         this.isSetup = false;
@@ -71,9 +72,60 @@ export class MarkerTracker {
     checkForDrift() {
         if (!this.isSetup) return;
 
-        console.log('Checking for marker drift...');
-        // In a real implementation, we would compare the current video frame
-        // with the stored markerRegions.
-        // For now, this is a placeholder.
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = this.videoElement.videoWidth;
+        tempCanvas.height = this.videoElement.videoHeight;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(this.videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
+        const currentFrameData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+
+        const newMarkers = [];
+        this.markers.forEach((marker, index) => {
+            const markerRegion = this.markerRegions[index];
+            const bestMatch = this._findBestMatch(currentFrameData, markerRegion, marker);
+            newMarkers.push(bestMatch);
+        });
+
+        this.markers = newMarkers;
+        this.uiController.drawTrackedMarkers(this.markers);
+        console.log('Finished drift check. Markers updated.');
+    }
+
+    _findBestMatch(frameData, templateData, lastPosition) {
+        const searchRadius = 10; // Search in a 20x20 pixel area around the last position
+        let bestMatch = { x: lastPosition.x, y: lastPosition.y, score: Infinity };
+
+        const startX = Math.round(lastPosition.x - searchRadius);
+        const startY = Math.round(lastPosition.y - searchRadius);
+        const endX = Math.round(lastPosition.x + searchRadius);
+        const endY = Math.round(lastPosition.y + searchRadius);
+
+        for (let y = startY; y <= endY; y++) {
+            for (let x = startX; x <= endX; x++) {
+                let ssd = 0; // Sum of Squared Differences
+                
+                // Compare the template against the current position in the frame
+                for (let ty = 0; ty < templateData.height; ty++) {
+                    for (let tx = 0; tx < templateData.width; tx++) {
+                        const frameIndex = ((y + ty) * frameData.width + (x + tx)) * 4;
+                        const templateIndex = (ty * templateData.width + tx) * 4;
+
+                        // Simple grayscale comparison for performance
+                        const framePixel = frameData.data[frameIndex];
+                        const templatePixel = templateData.data[templateIndex];
+                        const diff = framePixel - templatePixel;
+                        ssd += diff * diff;
+                    }
+                }
+                
+                if (ssd < bestMatch.score) {
+                    bestMatch.score = ssd;
+                    // The best match position is the center of the template
+                    bestMatch.x = x + templateData.width / 2;
+                    bestMatch.y = y + templateData.height / 2;
+                }
+            }
+        }
+        return { x: bestMatch.x, y: bestMatch.y };
     }
 } 

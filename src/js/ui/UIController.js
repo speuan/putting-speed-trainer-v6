@@ -37,6 +37,16 @@ export class UIController {
         this.canvas.style.pointerEvents = 'none';
     }
 
+    drawTrackedMarkers(markers) {
+        this.clearCanvas();
+        this.ctx.fillStyle = 'green';
+        markers.forEach(point => {
+            this.ctx.beginPath();
+            this.ctx.arc(point.x, point.y, 7, 0, 2 * Math.PI); // Slightly larger for visibility
+            this.ctx.fill();
+        });
+    }
+
     clearCanvas() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
