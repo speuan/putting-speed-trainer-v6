@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusIndicatorEl = document.getElementById('status-indicator');
     const resultsContainerEl = document.getElementById('results-container');
     const speedDisplayEl = document.getElementById('speed-display');
+    const recordingControlsEl = document.getElementById('recording-controls');
+    const replayContainerEl = document.getElementById('replay-container');
+    const replayVideoEl = document.getElementById('replay-video');
+    const closeReplayBtn = document.getElementById('close-replay-btn');
 
     const camera = new CameraController(videoElement);
     const ui = new UIController({
@@ -24,7 +28,12 @@ document.addEventListener('DOMContentLoaded', () => {
         statusIndicatorEl,
         resultsContainerEl,
         speedDisplayEl,
-        canvas: canvasElement
+        canvas: canvasElement,
+        // Replay elements
+        recordingControlsEl,
+        replayContainerEl,
+        replayVideoEl,
+        closeReplayBtn
     });
     const tracker = new MarkerTracker(videoElement, canvasElement, ui);
     let recordingController; // To be initialized later
@@ -100,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Initialize RecordingController
             recordingController = new RecordingController(camera.stream, (url) => {
-                ui.displayRecordingLink(url);
+                ui.displayRecordingControls(url);
             });
 
             ui.onCameraStarted();

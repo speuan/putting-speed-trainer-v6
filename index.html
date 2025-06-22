@@ -23,8 +23,16 @@
             <div id="status-container">
                 Status: <span id="status-indicator">Idle</span>
             </div>
-            <div id="results-container" style="display: none;">
-                Speed: <span id="speed-display">0.0</span> m/s
+            <div id="results-container" class="results-container" style="display: none;">
+                <h2>Results</h2>
+                <p>Putting Speed: <span id="speed-display">0.00</span> mph</p>
+                <div id="recording-controls">
+                    <!-- Download and replay buttons will be inserted here -->
+                </div>
+                <div id="replay-container" class="replay-container" style="display: none;">
+                    <video id="replay-video" controls playsinline></video>
+                    <button id="close-replay-btn" class="button">Close Replay</button>
+                </div>
             </div>
         </div>
     </div>

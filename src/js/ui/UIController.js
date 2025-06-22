@@ -9,6 +9,14 @@ export class UIController {
         this.speedDisplayEl = options.speedDisplayEl;
         this.canvas = options.canvas;
         this.ctx = this.canvas.getContext('2d');
+        
+        // New elements for replay
+        this.recordingControlsEl = options.recordingControlsEl;
+        this.replayContainerEl = options.replayContainerEl;
+        this.replayVideoEl = options.replayVideoEl;
+        this.closeReplayBtn = options.closeReplayBtn;
+
+        this.closeReplayBtn.addEventListener('click', () => this.hideReplay());
     }
 
     onCameraStarted() {
@@ -166,21 +174,36 @@ export class UIController {
     showResults(speed) {
         this.speedDisplayEl.textContent = speed.toFixed(2);
         this.resultsContainerEl.style.display = 'block';
+        this.hideReplay(); // Hide replay if a new result is shown
     }
 
-    displayRecordingLink(url) {
+    displayRecordingControls(url) {
+        this.recordingControlsEl.innerHTML = ''; // Clear previous controls
+
         const link = document.createElement('a');
         link.href = url;
         link.download = `putt-recording-${new Date().toISOString()}.webm`;
         link.textContent = 'Download Recording';
-        link.className = 'recording-link'; // For styling
+        link.className = 'button';
         
-        // Clear previous links before adding a new one
-        const existingLink = this.resultsContainerEl.querySelector('.recording-link');
-        if (existingLink) {
-            existingLink.remove();
-        }
+        const replayBtn = document.createElement('button');
+        replayBtn.textContent = 'Replay';
+        replayBtn.className = 'button';
+        replayBtn.addEventListener('click', () => this.playReplay(url));
 
-        this.resultsContainerEl.appendChild(link);
+        this.recordingControlsEl.appendChild(replayBtn);
+        this.recordingControlsEl.appendChild(link);
+    }
+
+    playReplay(url) {
+        this.replayVideoEl.src = url;
+        this.replayContainerEl.style.display = 'block';
+        this.replayVideoEl.play();
+    }
+
+    hideReplay() {
+        this.replayContainerEl.style.display = 'none';
+        this.replayVideoEl.pause();
+        this.replayVideoEl.src = '';
     }
 } 
