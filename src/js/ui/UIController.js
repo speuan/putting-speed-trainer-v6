@@ -163,8 +163,8 @@ export class UIController {
         this.statusIndicatorEl.textContent = text;
     }
 
-    showResults(speed) {
-        this.speedDisplayEl.textContent = speed.toFixed(2);
+    showResults({ speedMph, speedMps }) {
+        this.speedDisplayEl.innerHTML = `${speedMph.toFixed(2)} mph (${speedMps.toFixed(2)} m/s)`;
         this.resultsContainerEl.style.display = 'block';
     }
 } 
