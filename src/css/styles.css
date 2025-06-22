@@ -38,4 +38,26 @@ canvas {
 
 #status-indicator {
     font-weight: bold;
+}
+
+.button, a.button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 1em;
+    margin: 5px;
+    display: inline-block;
+}
+
+.button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.button:hover:not(:disabled) {
+    background-color: #0056b3;
 } 
