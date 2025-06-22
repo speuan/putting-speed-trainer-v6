@@ -79,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const endLine = { p1: markers[2], p2: markers[3] };
                     if (lineIntersect(ballPath.p1, ballPath.p2, endLine.p1, endLine.p2)) {
                         hasCrossedEnd = true;
+                        ui.showResults(0); // Show results container with a placeholder speed
                         ui.updateStatus('Finished!');
                         console.log('End line crossed');
                     }
