@@ -31,7 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let isMarkerSetupActive = false;
     let hasCrossedStart = false;
     let hasCrossedEnd = false;
-    let startTime = 0;
 
     function animationLoop() {
         const state = tracker.getState();
@@ -51,7 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const startLine = { p1: markers[0], p2: markers[1] };
                     if (lineIntersect(ballPath.p1, ballPath.p2, startLine.p1, startLine.p2)) {
                         hasCrossedStart = true;
-                        startTime = performance.now(); // Record start time
                         ui.updateStatus('Start line crossed!');
                         console.log('Start line crossed');
                     }
@@ -62,25 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const endLine = { p1: markers[2], p2: markers[3] };
                     if (lineIntersect(ballPath.p1, ballPath.p2, endLine.p1, endLine.p2)) {
                         hasCrossedEnd = true;
-                        const endTime = performance.now(); // Record end time
-                        
-                        const timeInSeconds = (endTime - startTime) / 1000;
-                        
-                        // Calculate distance
-                        const startLineMid = { x: (markers[0].x + markers[1].x) / 2, y: (markers[0].y + markers[1].y) / 2 };
-                        const endLineMid = { x: (markers[2].x + markers[3].x) / 2, y: (markers[2].y + markers[3].y) / 2 };
-                        const pixelDistance = Math.sqrt(Math.pow(endLineMid.x - startLineMid.x, 2) + Math.pow(endLineMid.y - startLineMid.y, 2));
-
-                        // This is a placeholder until calibration is implemented
-                        const PIXELS_PER_METER = 500; 
-                        const distanceInMeters = pixelDistance / PIXELS_PER_METER;
-                        
-                        const speedMps = distanceInMeters / timeInSeconds;
-                        const speedMph = speedMps * 2.23694;
-
-                        ui.showResults({ speedMph, speedMps });
                         ui.updateStatus('Finished!');
-                        console.log(`Finished! Time: ${timeInSeconds.toFixed(2)}s, Speed: ${speedMph.toFixed(2)} mph (${speedMps.toFixed(2)} m/s)`);
+                        console.log('End line crossed');
                     }
                 }
             }
