@@ -167,4 +167,20 @@ export class UIController {
         this.speedDisplayEl.textContent = speed.toFixed(2);
         this.resultsContainerEl.style.display = 'block';
     }
+
+    displayRecordingLink(url) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `putt-recording-${new Date().toISOString()}.webm`;
+        link.textContent = 'Download Recording';
+        link.className = 'recording-link'; // For styling
+        
+        // Clear previous links before adding a new one
+        const existingLink = this.resultsContainerEl.querySelector('.recording-link');
+        if (existingLink) {
+            existingLink.remove();
+        }
+
+        this.resultsContainerEl.appendChild(link);
+    }
 } 

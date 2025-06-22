@@ -2,6 +2,7 @@ import { CameraController } from './camera/CameraController.js';
 import { UIController } from './ui/UIController.js';
 import { MarkerTracker } from './tracking/MarkerTracker.js';
 import { lineIntersect } from './utils/geometry.js';
+import { RecordingController } from './recording/RecordingController.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const videoElement = document.getElementById('video');
@@ -26,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
         canvas: canvasElement
     });
     const tracker = new MarkerTracker(videoElement, canvasElement, ui);
+    let recordingController; // To be initialized later
 
     // --- Main Animation Loop ---
     let isMarkerSetupActive = false;
@@ -52,6 +54,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         hasCrossedStart = true;
                         ui.updateStatus('Start line crossed!');
                         console.log('Start line crossed');
+
+                        // Start recording and stop after 3 seconds
+                        if (recordingController) {
+                            recordingController.startRecording();
+                            setTimeout(() => {
+                                recordingController.stopRecording();
+                            }, 3000);
+                        }
                     }
                 }
 
@@ -87,6 +97,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const aspectRatio = videoElement.videoWidth / videoElement.videoHeight;
             videoContainer.style.height = `${videoContainer.clientWidth / aspectRatio}px`;
             // --- End of Correction ---
+
+            // Initialize RecordingController
+            recordingController = new RecordingController(camera.stream, (url) => {
+                ui.displayRecordingLink(url);
+            });
 
             ui.onCameraStarted();
             requestAnimationFrame(animationLoop); // Start the animation loop
