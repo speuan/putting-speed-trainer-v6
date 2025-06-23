@@ -11,86 +11,85 @@ export default class AnalysisController {
         this.startTime = null;
         this.endTime = null;
         this.resolveAnalysis = null;
+
+        // Assume a common framerate; we can adjust this if needed.
+        this.FRAME_RATE = 30;
+        this.FRAME_STEP = 1 / this.FRAME_RATE;
+
+        // Bind the 'seeked' event handler once to ensure it can be removed later.
+        this._boundOnSeeked = this._onSeeked.bind(this);
     }
 
     analyzeVideo(videoBlob) {
-        this.uiController.log('AnalysisController: analyzeVideo called.');
+        this.uiController.log('Analysis: Starting analysis...');
         return new Promise((resolve) => {
             this.resolveAnalysis = resolve;
+            this.startTime = null;
+            this.endTime = null;
+
             const videoUrl = URL.createObjectURL(videoBlob);
             this.videoElement.src = videoUrl;
-            this.uiController.log('AnalysisController: Video URL created and set.');
 
             this.videoElement.addEventListener('loadedmetadata', () => {
-                this.uiController.log('AnalysisController: Video metadata loaded.');
+                this.uiController.log('Analysis: Video metadata loaded.');
                 this.canvasElement.width = this.videoElement.videoWidth;
                 this.canvasElement.height = this.videoElement.videoHeight;
-                this.videoElement.play();
-                this.uiController.log('AnalysisController: Video playback started.');
-                this.videoElement.requestVideoFrameCallback(this._processFrame.bind(this));
-                this.uiController.log('AnalysisController: Requested first video frame callback.');
-            }, { once: true });
-
-            this.videoElement.addEventListener('ended', () => {
-                this.uiController.log('Analysis complete.');
-                this.uiController.log(`Start Time: ${this.startTime ? this.startTime.toFixed(3) + 's' : 'Not found'}`);
-                this.uiController.log(`End Time: ${this.endTime ? this.endTime.toFixed(3) + 's' : 'Not found'}`);
-
-                // Clean up the object URL
-                URL.revokeObjectURL(videoUrl);
-
-                if (this.resolveAnalysis) {
-                    this.resolveAnalysis({
-                        startTime: this.startTime,
-                        endTime: this.endTime,
-                    });
-                }
+                
+                this.uiController.log('Analysis: Beginning frame-by-frame seeking.');
+                this.videoElement.addEventListener('seeked', this._boundOnSeeked);
+                this.videoElement.currentTime = 0; // Trigger the first seek.
             }, { once: true });
         });
     }
 
-    _processFrame(now, metadata) {
-        this.uiController.log(`AnalysisController: Processing frame at time ${metadata.mediaTime.toFixed(3)}s`);
-        if (this.videoElement.ended) {
-            return;
-        }
+    _onSeeked() {
+        this.uiController.log(`Analysis: Processing frame at ${this.videoElement.currentTime.toFixed(3)}s`);
+        this._processFrame();
 
-        // Use the marker tracker's method to find the ball
+        const isDone = (this.startTime !== null && this.endTime !== null);
+        const isEndOfVideo = this.videoElement.currentTime + this.FRAME_STEP > this.videoElement.duration;
+
+        if (isDone || isEndOfVideo) {
+            // --- Analysis is complete ---
+            this.uiController.log('Analysis: Finished processing.');
+            this.uiController.log(`Final Start Time: ${this.startTime ? this.startTime.toFixed(3) + 's' : 'Not found'}`);
+            this.uiController.log(`Final End Time: ${this.endTime ? this.endTime.toFixed(3) + 's' : 'Not found'}`);
+            
+            // Cleanup
+            this.videoElement.removeEventListener('seeked', this._boundOnSeeked);
+            URL.revokeObjectURL(this.videoElement.src);
+            this.videoElement.src = ''; // Clear source
+
+            if (this.resolveAnalysis) {
+                this.resolveAnalysis({ startTime: this.startTime, endTime: this.endTime });
+            }
+        } else {
+            // --- Seek to the next frame ---
+            this.videoElement.currentTime += this.FRAME_STEP;
+        }
+    }
+
+    _processFrame() {
         this.markerTracker.trackBall(this.videoElement);
         const { ball, ballPrevious, markers } = this.markerTracker.getState();
 
         if (!ball || !ballPrevious || markers.length < 4) {
-            // Keep requesting frames until we have what we need
-            this.videoElement.requestVideoFrameCallback(this._processFrame.bind(this));
             return;
         }
 
-        // Define start and end lines from markers
+        const currentTime = this.videoElement.currentTime;
         const startLine = { p1: markers[0], p2: markers[1] };
         const endLine = { p1: markers[2], p2: markers[3] };
         const ballPath = { p1: ballPrevious, p2: ball };
 
-        // Check for crossing the start line
         if (this.startTime === null && lineIntersect(ballPath.p1, ballPath.p2, startLine.p1, startLine.p2)) {
-            this.startTime = metadata.mediaTime;
-            this.uiController.log(`Start line crossed at: ${this.startTime.toFixed(3)}s`);
+            this.startTime = currentTime;
+            this.uiController.log(`Event: Start line crossed at ${this.startTime.toFixed(3)}s`);
         }
 
-        // Check for crossing the end line
         if (this.endTime === null && lineIntersect(ballPath.p1, ballPath.p2, endLine.p1, endLine.p2)) {
-            this.endTime = metadata.mediaTime;
-            this.uiController.log(`End line crossed at: ${this.endTime.toFixed(3)}s`);
+            this.endTime = currentTime;
+            this.uiController.log(`Event: End line crossed at ${this.endTime.toFixed(3)}s`);
         }
-
-        // Stop analysis if both timestamps are found
-        if (this.startTime !== null && this.endTime !== null) {
-            this.videoElement.pause();
-            // Manually trigger the 'ended' event logic
-            this.videoElement.dispatchEvent(new Event('ended'));
-            return;
-        }
-
-        // Request the next frame
-        this.videoElement.requestVideoFrameCallback(this._processFrame.bind(this));
     }
 }
