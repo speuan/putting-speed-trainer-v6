@@ -100,10 +100,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const aspectRatio = videoElement.videoWidth / videoElement.videoHeight;
             videoContainer.style.height = `${videoContainer.clientWidth / aspectRatio}px`;
             
-            recordingController = new RecordingController(camera.stream, async (blob) => {
+            const handleAnalysis = async (blob) => {
                 ui.updateStatus('Analyzing...');
                 ui.prepareForAnalysis();
-                const videoUrl = URL.createObjectURL(blob);
                 
                 try {
                     const results = await analysisController.analyzeVideo(blob);
@@ -111,23 +110,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         const elapsedTime = results.endTime - results.startTime;
                         
                         // --- Speed Calculation ---
-                        // Assumption: The distance between the two start markers is 1 foot.
                         const REAL_WORLD_DISTANCE_FT = 1; 
                         const { markers } = tracker.getState();
                         const pixelDistanceOfKnownWidth = getDistance(markers[0], markers[1]);
                         const pixelsPerFoot = pixelDistanceOfKnownWidth / REAL_WORLD_DISTANCE_FT;
                         
-                        // Calculate the actual distance of the putt
                         const startLineCenter = { x: (markers[0].x + markers[1].x) / 2, y: (markers[0].y + markers[1].y) / 2 };
                         const endLineCenter = { x: (markers[2].x + markers[3].x) / 2, y: (markers[2].y + markers[3].y) / 2 };
                         const puttPixelDistance = getDistance(startLineCenter, endLineCenter);
                         const puttDistanceFt = puttPixelDistance / pixelsPerFoot;
                         
                         const speedFps = puttDistanceFt / elapsedTime;
-                        const speedMph = speedFps * 0.681818; // 1 ft/s = 0.681818 mph
+                        const speedMph = speedFps * 0.681818;
 
                         ui.showResults(speedMph);
-                        ui.displayRecordingControls(videoUrl);
                         ui.updateStatus('Complete');
                     } else {
                         ui.updateStatus('Analysis failed. Try again.');
@@ -139,10 +135,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error('An error occurred during video analysis:', error);
                 } finally {
                     ui.finishAnalysis();
-                    // Reset for the next putt
                     hasCrossedStart = false;
                     hasCrossedEnd = false;
                 }
+            };
+
+            recordingController = new RecordingController(camera.stream, (blob) => {
+                // Now, instead of analyzing directly, we provide the UI with the blob
+                // and the function to call when the user clicks "Analyze"
+                ui.displayRecordingControls(blob, handleAnalysis);
             });
 
             ui.onCameraStarted();

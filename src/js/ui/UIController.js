@@ -178,20 +178,28 @@ export class UIController {
         this.hideReplay(); // Hide replay if a new result is shown
     }
 
-    displayRecordingControls(url) {
+    displayRecordingControls(blob, onAnalyze) {
         this.recordingControlsEl.innerHTML = ''; // Clear previous controls
+
+        const url = URL.createObjectURL(blob);
+
+        const analyzeBtn = document.createElement('button');
+        analyzeBtn.textContent = 'Analyze Putt';
+        analyzeBtn.className = 'button';
+        analyzeBtn.addEventListener('click', () => onAnalyze(blob));
+
+        const replayBtn = document.createElement('button');
+        replayBtn.textContent = 'Replay';
+        replayBtn.className = 'button';
+        replayBtn.addEventListener('click', () => this.playReplay(url));
 
         const link = document.createElement('a');
         link.href = url;
         link.download = `putt-recording-${new Date().toISOString()}.webm`;
         link.textContent = 'Download Recording';
         link.className = 'button';
-        
-        const replayBtn = document.createElement('button');
-        replayBtn.textContent = 'Replay';
-        replayBtn.className = 'button';
-        replayBtn.addEventListener('click', () => this.playReplay(url));
 
+        this.recordingControlsEl.appendChild(analyzeBtn);
         this.recordingControlsEl.appendChild(replayBtn);
         this.recordingControlsEl.appendChild(link);
     }
