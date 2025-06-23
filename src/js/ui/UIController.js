@@ -172,6 +172,12 @@ export class UIController {
         this.statusIndicatorEl.textContent = text;
     }
 
+    showPendingAnalysis() {
+        this.speedDisplayEl.textContent = '--'; // Placeholder for speed
+        this.resultsContainerEl.style.display = 'block';
+        this.hideReplay();
+    }
+
     showResults(speed) {
         this.speedDisplayEl.textContent = speed.toFixed(2);
         this.resultsContainerEl.style.display = 'block';

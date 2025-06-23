@@ -141,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             recordingController = new RecordingController(camera.stream, (blob) => {
+                ui.showPendingAnalysis();
                 // Now, instead of analyzing directly, we provide the UI with the blob
                 // and the function to call when the user clicks "Analyze"
                 ui.displayRecordingControls(blob, handleAnalysis);
