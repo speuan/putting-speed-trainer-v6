@@ -50,11 +50,11 @@ export default class AnalysisController {
                 this.uiController.log('Analysis: Beginning frame-by-frame seeking.');
                 this.videoElement.addEventListener('seeked', this._boundOnSeeked);
                 
-                // Add a small delay to ensure readiness before the first seek.
-                setTimeout(() => {
+                // Use requestAnimationFrame for a more reliable seek on the next paint cycle.
+                requestAnimationFrame(() => {
                     this.uiController.log('Analysis: Setting currentTime to 0 to trigger first seek.');
                     this.videoElement.currentTime = 0;
-                }, 100); // 100ms delay
+                });
 
             }, { once: true });
 
