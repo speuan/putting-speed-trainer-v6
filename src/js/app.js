@@ -132,10 +132,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         ui.updateStatus('Complete');
                     } else {
                         ui.updateStatus('Analysis failed. Try again.');
-                        console.error('Analysis could not determine start or end time.');
+                        ui.log('Analysis failed: Could not find start or end time.');
                     }
                 } catch (error) {
                     ui.updateStatus('Error during analysis.');
+                    ui.log(`Error: ${error.message}`);
                     console.error('An error occurred during video analysis:', error);
                 } finally {
                     // Reset for the next putt
@@ -167,6 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
         hasCrossedEnd = false;
         resultsContainerEl.style.display = 'none'; // Hide old results
         recordingControlsEl.innerHTML = ''; // Clear old controls
+        ui.clearLogs();
 
         ui.startMarkerSetup();
         ui.promptForMarker(0);

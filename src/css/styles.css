@@ -40,6 +40,18 @@ canvas {
     font-weight: bold;
 }
 
+.log-container {
+    margin-top: 15px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    height: 100px;
+    overflow-y: scroll;
+    background-color: #f9f9f9;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+}
+
 .button, a.button {
     background-color: #007bff;
     color: white;

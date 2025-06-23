@@ -27,8 +27,9 @@ export default class AnalysisController {
             }, { once: true });
 
             this.videoElement.addEventListener('ended', () => {
-                console.log('Analysis complete.');
-                console.log(`Start Time: ${this.startTime}, End Time: ${this.endTime}`);
+                this.uiController.log('Analysis complete.');
+                this.uiController.log(`Start Time: ${this.startTime ? this.startTime.toFixed(3) + 's' : 'Not found'}`);
+                this.uiController.log(`End Time: ${this.endTime ? this.endTime.toFixed(3) + 's' : 'Not found'}`);
 
                 // Clean up the object URL
                 URL.revokeObjectURL(videoUrl);
@@ -66,13 +67,13 @@ export default class AnalysisController {
         // Check for crossing the start line
         if (this.startTime === null && lineIntersect(ballPath.p1, ballPath.p2, startLine.p1, startLine.p2)) {
             this.startTime = metadata.mediaTime;
-            console.log(`Start line crossed at: ${this.startTime}`);
+            this.uiController.log(`Start line crossed at: ${this.startTime.toFixed(3)}s`);
         }
 
         // Check for crossing the end line
         if (this.endTime === null && lineIntersect(ballPath.p1, ballPath.p2, endLine.p1, endLine.p2)) {
             this.endTime = metadata.mediaTime;
-            console.log(`End line crossed at: ${this.endTime}`);
+            this.uiController.log(`End line crossed at: ${this.endTime.toFixed(3)}s`);
         }
 
         // Stop analysis if both timestamps are found

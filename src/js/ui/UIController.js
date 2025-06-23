@@ -9,6 +9,7 @@ export class UIController {
         this.speedDisplayEl = options.speedDisplayEl;
         this.canvas = options.canvas;
         this.ctx = this.canvas.getContext('2d');
+        this.logContainerEl = document.getElementById('log-container');
         
         // New elements for replay
         this.recordingControlsEl = options.recordingControlsEl;
@@ -205,5 +206,17 @@ export class UIController {
         this.replayContainerEl.style.display = 'none';
         this.replayVideoEl.pause();
         this.replayVideoEl.src = '';
+    }
+
+    log(message) {
+        const p = document.createElement('p');
+        p.textContent = `> ${message}`;
+        this.logContainerEl.appendChild(p);
+        // Auto-scroll to the bottom
+        this.logContainerEl.scrollTop = this.logContainerEl.scrollHeight;
+    }
+
+    clearLogs() {
+        this.logContainerEl.innerHTML = '';
     }
 } 
