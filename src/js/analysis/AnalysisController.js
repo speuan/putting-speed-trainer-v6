@@ -32,10 +32,20 @@ export default class AnalysisController {
             this.videoElement.src = videoUrl;
 
             // Use 'canplaythrough' which is a stronger signal that the video is ready.
-            this.videoElement.addEventListener('canplaythrough', () => {
+            this.videoElement.addEventListener('canplaythrough', async () => {
                 this.uiController.log('Analysis: Video is ready to play through.');
                 this.canvasElement.width = this.videoElement.videoWidth;
                 this.canvasElement.height = this.videoElement.videoHeight;
+                
+                // On mobile, we often need to kickstart the video with play() before we can seek.
+                try {
+                    await this.videoElement.play();
+                    this.videoElement.pause();
+                    this.uiController.log('Analysis: Video playback engine started.');
+                } catch (err) {
+                    this.uiController.log(`Analysis Error: play() failed: ${err.message}`);
+                    return; // Can't proceed
+                }
                 
                 this.uiController.log('Analysis: Beginning frame-by-frame seeking.');
                 this.videoElement.addEventListener('seeked', this._boundOnSeeked);
