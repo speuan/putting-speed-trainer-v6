@@ -30,15 +30,27 @@ export default class AnalysisController {
             const videoUrl = URL.createObjectURL(videoBlob);
             this.videoElement.src = videoUrl;
 
-            this.videoElement.addEventListener('loadedmetadata', () => {
-                this.uiController.log('Analysis: Video metadata loaded.');
+            // Use 'canplaythrough' which is a stronger signal that the video is ready.
+            this.videoElement.addEventListener('canplaythrough', () => {
+                this.uiController.log('Analysis: Video is ready to play through.');
                 this.canvasElement.width = this.videoElement.videoWidth;
                 this.canvasElement.height = this.videoElement.videoHeight;
                 
                 this.uiController.log('Analysis: Beginning frame-by-frame seeking.');
                 this.videoElement.addEventListener('seeked', this._boundOnSeeked);
-                this.videoElement.currentTime = 0; // Trigger the first seek.
+                
+                // Add a small delay to ensure readiness before the first seek.
+                setTimeout(() => {
+                    this.uiController.log('Analysis: Setting currentTime to 0 to trigger first seek.');
+                    this.videoElement.currentTime = 0;
+                }, 100); // 100ms delay
+
             }, { once: true });
+
+            this.videoElement.addEventListener('error', (e) => {
+                const error = e.target.error;
+                this.uiController.log(`Analysis Error: ${error.message} (Code: ${error.code})`);
+           });
         });
     }
 
