@@ -1,12 +1,18 @@
 import { CameraController } from './camera/CameraController.js';
 import { UIController } from './ui/UIController.js';
 import { MarkerTracker } from './tracking/MarkerTracker.js';
-import { lineIntersect } from './utils/geometry.js';
+import { lineIntersect, getDistance } from './utils/geometry.js';
 import { RecordingController } from './recording/RecordingController.js';
+import AnalysisController from './analysis/AnalysisController.js';
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Video and Canvas elements
     const videoElement = document.getElementById('video');
     const canvasElement = document.getElementById('canvas');
+    const analysisVideoElement = document.getElementById('analysis-video');
+    const analysisCanvasElement = document.getElementById('analysis-canvas');
+
+    // UI elements
     const startCameraBtn = document.getElementById('start-camera-btn');
     const switchCameraBtn = document.getElementById('switch-camera-btn');
     const setupMarkersBtn = document.getElementById('setup-markers-btn');
@@ -19,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const replayVideoEl = document.getElementById('replay-video');
     const closeReplayBtn = document.getElementById('close-replay-btn');
 
+    // Controllers
     const camera = new CameraController(videoElement);
     const ui = new UIController({
         startCameraBtn,
@@ -29,16 +36,16 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsContainerEl,
         speedDisplayEl,
         canvas: canvasElement,
-        // Replay elements
         recordingControlsEl,
         replayContainerEl,
         replayVideoEl,
         closeReplayBtn
     });
     const tracker = new MarkerTracker(videoElement, canvasElement, ui);
-    let recordingController; // To be initialized later
+    const analysisController = new AnalysisController(analysisVideoElement, analysisCanvasElement, ui, tracker);
+    let recordingController;
 
-    // --- Main Animation Loop ---
+    // State
     let isMarkerSetupActive = false;
     let hasCrossedStart = false;
     let hasCrossedEnd = false;
@@ -48,40 +55,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (state.state === 'ARMED') {
             tracker.trackBall(videoElement);
-
-            // Get the updated state after tracking
             const { ball, ballPrevious, markers } = tracker.getState();
 
-            // Check for line crossings if the ball has moved
-            if (ball && ballPrevious && !hasCrossedEnd) {
+            if (ball && ballPrevious && markers.length === 4 && !hasCrossedEnd) {
                 const ballPath = { p1: ballPrevious, p2: ball };
                 
-                // Check start line
                 if (!hasCrossedStart) {
                     const startLine = { p1: markers[0], p2: markers[1] };
                     if (lineIntersect(ballPath.p1, ballPath.p2, startLine.p1, startLine.p2)) {
                         hasCrossedStart = true;
-                        ui.updateStatus('Start line crossed!');
-                        console.log('Start line crossed');
-
-                        // Start recording and stop after 3 seconds
+                        ui.updateStatus('Recording...');
+                        console.log('Start line crossed, recording started.');
                         if (recordingController) {
                             recordingController.startRecording();
-                            setTimeout(() => {
-                                recordingController.stopRecording();
-                            }, 3000);
                         }
                     }
-                }
-
-                // Check end line (only if start has been crossed)
-                if (hasCrossedStart) {
+                } else { // Already crossed start, now check for end
                     const endLine = { p1: markers[2], p2: markers[3] };
                     if (lineIntersect(ballPath.p1, ballPath.p2, endLine.p1, endLine.p2)) {
                         hasCrossedEnd = true;
-                        ui.showResults(0); // Show results container with a placeholder speed
                         ui.updateStatus('Finished!');
-                        console.log('End line crossed');
+                        console.log('End line crossed, stopping recording.');
+                        if (recordingController) {
+                            recordingController.stopRecording();
+                        }
                     }
                 }
             }
@@ -94,7 +91,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         requestAnimationFrame(animationLoop);
     }
-    // --- End of Animation Loop ---
 
     startCameraBtn.addEventListener('click', async () => {
         try {
@@ -102,19 +98,54 @@ document.addEventListener('DOMContentLoaded', () => {
             canvasElement.width = videoElement.videoWidth;
             canvasElement.height = videoElement.videoHeight;
 
-            // --- Aspect Ratio Correction ---
             const videoContainer = document.querySelector('.video-container');
             const aspectRatio = videoElement.videoWidth / videoElement.videoHeight;
             videoContainer.style.height = `${videoContainer.clientWidth / aspectRatio}px`;
-            // --- End of Correction ---
+            
+            recordingController = new RecordingController(camera.stream, async (blob) => {
+                ui.updateStatus('Analyzing...');
+                const videoUrl = URL.createObjectURL(blob);
+                
+                try {
+                    const results = await analysisController.analyzeVideo(blob);
+                    if (results.startTime && results.endTime) {
+                        const elapsedTime = results.endTime - results.startTime;
+                        
+                        // --- Speed Calculation ---
+                        // Assumption: The distance between the two start markers is 1 foot.
+                        const REAL_WORLD_DISTANCE_FT = 1; 
+                        const { markers } = tracker.getState();
+                        const pixelDistanceOfKnownWidth = getDistance(markers[0], markers[1]);
+                        const pixelsPerFoot = pixelDistanceOfKnownWidth / REAL_WORLD_DISTANCE_FT;
+                        
+                        // Calculate the actual distance of the putt
+                        const startLineCenter = { x: (markers[0].x + markers[1].x) / 2, y: (markers[0].y + markers[1].y) / 2 };
+                        const endLineCenter = { x: (markers[2].x + markers[3].x) / 2, y: (markers[2].y + markers[3].y) / 2 };
+                        const puttPixelDistance = getDistance(startLineCenter, endLineCenter);
+                        const puttDistanceFt = puttPixelDistance / pixelsPerFoot;
+                        
+                        const speedFps = puttDistanceFt / elapsedTime;
+                        const speedMph = speedFps * 0.681818; // 1 ft/s = 0.681818 mph
 
-            // Initialize RecordingController
-            recordingController = new RecordingController(camera.stream, (url) => {
-                ui.displayRecordingControls(url);
+                        ui.showResults(speedMph);
+                        ui.displayRecordingControls(videoUrl);
+                        ui.updateStatus('Complete');
+                    } else {
+                        ui.updateStatus('Analysis failed. Try again.');
+                        console.error('Analysis could not determine start or end time.');
+                    }
+                } catch (error) {
+                    ui.updateStatus('Error during analysis.');
+                    console.error('An error occurred during video analysis:', error);
+                } finally {
+                    // Reset for the next putt
+                    hasCrossedStart = false;
+                    hasCrossedEnd = false;
+                }
             });
 
             ui.onCameraStarted();
-            requestAnimationFrame(animationLoop); // Start the animation loop
+            requestAnimationFrame(animationLoop);
         } catch (error) {
             console.error('Failed to start camera:', error);
             instructionsEl.textContent = 'Could not start camera. Please check permissions.';
@@ -134,6 +165,9 @@ document.addEventListener('DOMContentLoaded', () => {
         isMarkerSetupActive = true;
         hasCrossedStart = false;
         hasCrossedEnd = false;
+        resultsContainerEl.style.display = 'none'; // Hide old results
+        recordingControlsEl.innerHTML = ''; // Clear old controls
+
         ui.startMarkerSetup();
         ui.promptForMarker(0);
 

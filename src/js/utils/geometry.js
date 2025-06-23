@@ -37,4 +37,14 @@ export function lineIntersect(p1, p2, p3, p4) {
     if (o4 === 0 && onSegment(p3, p2, p4)) return true;
 
     return false;
+}
+
+/**
+ * Calculates the Euclidean distance between two points.
+ * @param {object} p1 - Point {x, y}
+ * @param {object} p2 - Point {x, y}
+ * @returns {number} - The distance between the two points.
+ */
+export function getDistance(p1, p2) {
+    return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
 } 

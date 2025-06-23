@@ -29,8 +29,7 @@ export class RecordingController {
 
         this.mediaRecorder.onstop = () => {
             const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
-            const url = URL.createObjectURL(blob);
-            this.onRecordingComplete(url);
+            this.onRecordingComplete(blob);
         };
 
         this.mediaRecorder.start();
