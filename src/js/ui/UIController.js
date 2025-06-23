@@ -208,6 +208,26 @@ export class UIController {
         this.replayVideoEl.src = '';
     }
 
+    prepareForAnalysis() {
+        this.log('UI: Preparing analysis view.');
+        this.replayContainerEl.style.display = 'block';
+        this.replayContainerEl.style.position = 'absolute';
+        this.replayContainerEl.style.opacity = '0';
+        this.replayContainerEl.style.width = '1px';
+        this.replayContainerEl.style.height = '1px';
+        this.replayContainerEl.style.pointerEvents = 'none';
+    }
+
+    finishAnalysis() {
+        this.log('UI: Hiding analysis view.');
+        this.hideReplay();
+        this.replayContainerEl.style.position = 'static';
+        this.replayContainerEl.style.opacity = '1';
+        this.replayContainerEl.style.width = 'auto';
+        this.replayContainerEl.style.height = 'auto';
+        this.replayContainerEl.style.pointerEvents = 'auto';
+    }
+
     log(message) {
         const p = document.createElement('p');
         p.textContent = `> ${message}`;

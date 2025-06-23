@@ -9,8 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Video and Canvas elements
     const videoElement = document.getElementById('video');
     const canvasElement = document.getElementById('canvas');
-    const analysisVideoElement = document.getElementById('analysis-video');
-    const analysisCanvasElement = document.getElementById('analysis-canvas');
 
     // UI elements
     const startCameraBtn = document.getElementById('start-camera-btn');
@@ -42,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
         closeReplayBtn
     });
     const tracker = new MarkerTracker(videoElement, canvasElement, ui);
-    const analysisController = new AnalysisController(analysisVideoElement, analysisCanvasElement, ui, tracker);
+    const analysisController = new AnalysisController(replayVideoEl, ui, tracker);
     let recordingController;
 
     // State
@@ -104,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             recordingController = new RecordingController(camera.stream, async (blob) => {
                 ui.updateStatus('Analyzing...');
+                ui.prepareForAnalysis();
                 const videoUrl = URL.createObjectURL(blob);
                 
                 try {
@@ -139,6 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ui.log(`Error: ${error.message}`);
                     console.error('An error occurred during video analysis:', error);
                 } finally {
+                    ui.finishAnalysis();
                     // Reset for the next putt
                     hasCrossedStart = false;
                     hasCrossedEnd = false;

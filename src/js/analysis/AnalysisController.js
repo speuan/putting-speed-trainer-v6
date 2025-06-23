@@ -1,12 +1,13 @@
 import { lineIntersect } from '../utils/geometry.js';
 
 export default class AnalysisController {
-    constructor(videoElement, canvasElement, uiController, markerTracker) {
+    constructor(videoElement, uiController, markerTracker) {
         this.videoElement = videoElement;
-        this.canvasElement = canvasElement;
         this.uiController = uiController;
         this.markerTracker = markerTracker;
         
+        // This canvas is just for internal use by the tracker and is never displayed.
+        this.canvasElement = document.createElement('canvas');
         this.context = this.canvasElement.getContext('2d');
         this.startTime = null;
         this.endTime = null;
