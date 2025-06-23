@@ -14,16 +14,21 @@ export default class AnalysisController {
     }
 
     analyzeVideo(videoBlob) {
+        this.uiController.log('AnalysisController: analyzeVideo called.');
         return new Promise((resolve) => {
             this.resolveAnalysis = resolve;
             const videoUrl = URL.createObjectURL(videoBlob);
             this.videoElement.src = videoUrl;
+            this.uiController.log('AnalysisController: Video URL created and set.');
 
             this.videoElement.addEventListener('loadedmetadata', () => {
+                this.uiController.log('AnalysisController: Video metadata loaded.');
                 this.canvasElement.width = this.videoElement.videoWidth;
                 this.canvasElement.height = this.videoElement.videoHeight;
                 this.videoElement.play();
+                this.uiController.log('AnalysisController: Video playback started.');
                 this.videoElement.requestVideoFrameCallback(this._processFrame.bind(this));
+                this.uiController.log('AnalysisController: Requested first video frame callback.');
             }, { once: true });
 
             this.videoElement.addEventListener('ended', () => {
@@ -45,6 +50,7 @@ export default class AnalysisController {
     }
 
     _processFrame(now, metadata) {
+        this.uiController.log(`AnalysisController: Processing frame at time ${metadata.mediaTime.toFixed(3)}s`);
         if (this.videoElement.ended) {
             return;
         }
