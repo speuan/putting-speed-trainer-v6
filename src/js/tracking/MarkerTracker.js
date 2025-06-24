@@ -295,4 +295,49 @@ export class MarkerTracker {
         const maxY = Math.max(line.p1.y, line.p2.y) + margin;
         return { minX, maxX, minY, maxY };
     }
+
+    // Find the best template match position in the ROI (for live bounding box)
+    static bestTemplateMatchPosition(currentROI, ballRegion) {
+        if (!currentROI || !ballRegion) return null;
+        let bestScore = Infinity;
+        let bestPos = null;
+        const roiWidth = currentROI.width;
+        const roiHeight = currentROI.height;
+        const tplWidth = ballRegion.width;
+        const tplHeight = ballRegion.height;
+        for (let y = 0; y <= roiHeight - tplHeight; y++) {
+            for (let x = 0; x <= roiWidth - tplWidth; x++) {
+                let ssd = 0;
+                for (let ty = 0; ty < tplHeight; ty++) {
+                    for (let tx = 0; tx < tplWidth; tx++) {
+                        const roiIdx = ((y + ty) * roiWidth + (x + tx)) * 4;
+                        const tplIdx = (ty * tplWidth + tx) * 4;
+                        const roiGray = 0.299 * currentROI.data[roiIdx] + 0.587 * currentROI.data[roiIdx+1] + 0.114 * currentROI.data[roiIdx+2];
+                        const tplGray = 0.299 * ballRegion.data[tplIdx] + 0.587 * ballRegion.data[tplIdx+1] + 0.114 * ballRegion.data[tplIdx+2];
+                        ssd += (roiGray - tplGray) * (roiGray - tplGray);
+                    }
+                }
+                if (ssd < bestScore) {
+                    bestScore = ssd;
+                    bestPos = { x, y, score: ssd };
+                }
+            }
+        }
+        return bestPos;
+    }
+
+    // Return a mask of significant difference pixels in the ROI (for visualization)
+    static differenceMask(currentROI, referenceROI, threshold = 30) {
+        if (!currentROI || !referenceROI) return null;
+        const mask = new Uint8ClampedArray(currentROI.width * currentROI.height);
+        for (let y = 0; y < currentROI.height; y++) {
+            for (let x = 0; x < currentROI.width; x++) {
+                const idx = (y * currentROI.width + x) * 4;
+                const curGray = 0.299 * currentROI.data[idx] + 0.587 * currentROI.data[idx+1] + 0.114 * currentROI.data[idx+2];
+                const refGray = 0.299 * referenceROI.data[idx] + 0.587 * referenceROI.data[idx+1] + 0.114 * referenceROI.data[idx+2];
+                mask[y * currentROI.width + x] = Math.abs(curGray - refGray) > threshold ? 255 : 0;
+            }
+        }
+        return mask;
+    }
 } 

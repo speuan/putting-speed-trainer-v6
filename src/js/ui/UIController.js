@@ -82,6 +82,16 @@ export class UIController {
             this.drawROI(state.roi);
         }
 
+        // Draw difference mask if present
+        if (state.diffMask && state.roi) {
+            this.drawDiffMask(state.diffMask, state.roi);
+        }
+
+        // Draw live bounding box if present
+        if (state.liveBallBox) {
+            this.drawLiveBallBox(state.liveBallBox);
+        }
+
         // Draw existing markers
         if (state.markers) {
             state.markers.forEach(marker => this.drawMarker(marker));
@@ -183,6 +193,31 @@ export class UIController {
         this.ctx.fillRect(roi.minX, roi.minY, width, height);
         this.ctx.strokeRect(roi.minX, roi.minY, width, height);
         this.ctx.restore();
+    }
+
+    drawLiveBallBox(box) {
+        this.ctx.save();
+        this.ctx.strokeStyle = 'limegreen';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(box.x - box.w / 2, box.y - box.h / 2, box.w, box.h);
+        this.ctx.restore();
+    }
+
+    drawDiffMask(mask, roi) {
+        const width = roi.maxX - roi.minX;
+        const height = roi.maxY - roi.minY;
+        const imageData = this.ctx.createImageData(width, height);
+        for (let i = 0; i < mask.length; i++) {
+            if (mask[i]) {
+                imageData.data[i * 4 + 0] = 255; // Red
+                imageData.data[i * 4 + 1] = 0;
+                imageData.data[i * 4 + 2] = 0;
+                imageData.data[i * 4 + 3] = 120; // Alpha
+            } else {
+                imageData.data[i * 4 + 3] = 0;
+            }
+        }
+        this.ctx.putImageData(imageData, roi.minX, roi.minY);
     }
 
     clearCanvas() {
