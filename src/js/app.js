@@ -97,6 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Detection logic: require both a good template match and significant difference
                     const templateDetected = tracker.constructor.roiTemplateMatch(currentROI, ballRegion);
                     const diffDetected = tracker.constructor.roiDifference(currentROI, referenceROI);
+                    console.log('Live confidence score:', bestMatch ? bestMatch.score : null, 'templateDetected:', templateDetected, 'diffDetected:', diffDetected);
                     ballDetected = templateDetected && diffDetected;
                     if (!hasCrossedStart && ballDetected) {
                         hasCrossedStart = true;
