@@ -63,12 +63,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!hasCrossedStart) {
                     // Start ROI
                     const startLine = { p1: markers[0], p2: markers[1] };
-                    roi = tracker.getLineROI(startLine, 20);
+                    roi = tracker.getLineROI(startLine, 10, 40);
                     referenceROI = referenceStartROI;
                 } else if (!hasCrossedEnd) {
                     // End ROI
                     const endLine = { p1: markers[2], p2: markers[3] };
-                    roi = tracker.getLineROI(endLine, 20);
+                    roi = tracker.getLineROI(endLine, 10, 40);
                     referenceROI = referenceEndROI;
                 }
                 if (roi && referenceROI) {
@@ -90,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             score: bestMatch.score
                         };
                         liveScore = bestMatch.score;
+                        console.log('Live confidence score:', bestMatch.score);
                     }
                     // Difference mask
                     diffMask = tracker.constructor.differenceMask(currentROI, referenceROI);
