@@ -12,6 +12,9 @@ export class MarkerTracker {
         this.ballPrevious = null;
         this.ballRegion = null;
         this.state = 'IDLE'; // IDLE, AWAITING_MARKERS, AWAITING_BALL, ARMED
+        // Store reference images for start and finish ROIs
+        this.referenceStartROI = null;
+        this.referenceEndROI = null;
     }
 
     getState() {
@@ -71,6 +74,7 @@ export class MarkerTracker {
                 if (this.markers.length === 4) {
                     this.state = 'AWAITING_BALL';
                     this.captureMarkerRegions();
+                    this.captureReferenceROIs();
                     progressCallback(this);
                 }
             } else if (this.state === 'AWAITING_BALL') {
@@ -118,33 +122,77 @@ export class MarkerTracker {
         console.log('Ball template captured.');
     }
 
-    trackBall(videoElement, roi = null) {
-        if (!this.isSetup || !this.ballRegion) return;
+    captureReferenceROIs() {
+        if (this.markers.length !== 4) return;
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = this.videoElement.videoWidth;
+        tempCanvas.height = this.videoElement.videoHeight;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(this.videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
+        // Start ROI
+        const startLine = { p1: this.markers[0], p2: this.markers[1] };
+        const startROI = this.getLineROI(startLine, 40);
+        this.referenceStartROI = tempCtx.getImageData(startROI.minX, startROI.minY, startROI.maxX - startROI.minX, startROI.maxY - startROI.minY);
+        // End ROI
+        const endLine = { p1: this.markers[2], p2: this.markers[3] };
+        const endROI = this.getLineROI(endLine, 40);
+        this.referenceEndROI = tempCtx.getImageData(endROI.minX, endROI.minY, endROI.maxX - endROI.minX, endROI.maxY - endROI.minY);
+    }
 
+    // Difference detection: returns true if difference exceeds threshold
+    static roiDifference(currentROI, referenceROI, threshold = 30) {
+        if (!currentROI || !referenceROI) return false;
+        let diffSum = 0;
+        for (let i = 0; i < currentROI.data.length; i += 4) {
+            // Use grayscale diff for robustness
+            const curGray = 0.299 * currentROI.data[i] + 0.587 * currentROI.data[i+1] + 0.114 * currentROI.data[i+2];
+            const refGray = 0.299 * referenceROI.data[i] + 0.587 * referenceROI.data[i+1] + 0.114 * referenceROI.data[i+2];
+            diffSum += Math.abs(curGray - refGray);
+        }
+        const avgDiff = diffSum / (currentROI.data.length / 4);
+        return avgDiff > threshold;
+    }
+
+    // Template matching: returns true if a good match is found in ROI
+    static roiTemplateMatch(currentROI, ballRegion, matchThreshold = 1e6) {
+        if (!currentROI || !ballRegion) return false;
+        let bestScore = Infinity;
+        // Slide ballRegion over currentROI
+        const roiWidth = currentROI.width;
+        const roiHeight = currentROI.height;
+        const tplWidth = ballRegion.width;
+        const tplHeight = ballRegion.height;
+        for (let y = 0; y <= roiHeight - tplHeight; y++) {
+            for (let x = 0; x <= roiWidth - tplWidth; x++) {
+                let ssd = 0;
+                for (let ty = 0; ty < tplHeight; ty++) {
+                    for (let tx = 0; tx < tplWidth; tx++) {
+                        const roiIdx = ((y + ty) * roiWidth + (x + tx)) * 4;
+                        const tplIdx = (ty * tplWidth + tx) * 4;
+                        const roiGray = 0.299 * currentROI.data[roiIdx] + 0.587 * currentROI.data[roiIdx+1] + 0.114 * currentROI.data[roiIdx+2];
+                        const tplGray = 0.299 * ballRegion.data[tplIdx] + 0.587 * ballRegion.data[tplIdx+1] + 0.114 * ballRegion.data[tplIdx+2];
+                        ssd += (roiGray - tplGray) * (roiGray - tplGray);
+                    }
+                }
+                if (ssd < bestScore) bestScore = ssd;
+            }
+        }
+        return bestScore < matchThreshold;
+    }
+
+    // Main detection method: returns true if ball is present in ROI (difference + template)
+    detectBallInROI(videoElement, roi, referenceROI, ballRegion) {
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = videoElement.videoWidth;
         tempCanvas.height = videoElement.videoHeight;
         const tempCtx = tempCanvas.getContext('2d');
         tempCtx.drawImage(videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
-        const currentFrameData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-
-        // Calculate velocity and set a dynamic search radius
-        const velocityX = this.ball.x - this.ballPrevious.x;
-        const velocityY = this.ball.y - this.ballPrevious.y;
-        const velocity = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
-
-        // Predict the next position based on the current velocity
-        const predictedPosition = {
-            x: this.ball.x + velocityX,
-            y: this.ball.y + velocityY,
-        };
-
-        // Base search radius + a factor of the velocity
-        const searchRadius = 10 + Math.ceil(velocity);
-
-        const bestMatch = this._findBestMatch(currentFrameData, this.ballRegion, predictedPosition, searchRadius, roi);
-        this.ballPrevious = { ...this.ball };
-        this.ball = bestMatch;
+        const currentROI = tempCtx.getImageData(roi.minX, roi.minY, roi.maxX - roi.minX, roi.maxY - roi.minY);
+        // Difference detection
+        const diffDetected = MarkerTracker.roiDifference(currentROI, referenceROI);
+        // Template match
+        const templateDetected = MarkerTracker.roiTemplateMatch(currentROI, ballRegion);
+        return diffDetected && templateDetected;
     }
 
     captureMarkerRegions() {
