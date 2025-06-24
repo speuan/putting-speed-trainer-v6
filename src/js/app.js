@@ -51,9 +51,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function animationLoop() {
         const state = tracker.getState();
 
+        let roi = null;
         if (state.state === 'ARMED') {
             const { ball, ballPrevious, markers } = tracker.getState();
-            let roi = null;
             if (markers.length === 4) {
                 if (!hasCrossedStart) {
                     // Restrict to start line ROI
@@ -96,6 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isMarkerSetupActive || state.state === 'ARMED') {
             const updatedState = tracker.getState();
             updatedState.videoElement = videoElement;
+            if (roi) updatedState.roi = roi;
             ui.render(updatedState);
         }
         requestAnimationFrame(animationLoop);

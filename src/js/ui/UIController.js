@@ -77,6 +77,11 @@ export class UIController {
     render(state) {
         this.clearCanvas();
 
+        // Draw ROI for debugging if present
+        if (state.roi) {
+            this.drawROI(state.roi);
+        }
+
         // Draw existing markers
         if (state.markers) {
             state.markers.forEach(marker => this.drawMarker(marker));
@@ -166,6 +171,18 @@ export class UIController {
         this.ctx.strokeStyle = 'red';
         this.ctx.lineWidth = 2;
         this.ctx.stroke();
+    }
+
+    drawROI(roi) {
+        this.ctx.save();
+        this.ctx.strokeStyle = 'rgba(0, 0, 255, 0.7)';
+        this.ctx.lineWidth = 2;
+        this.ctx.fillStyle = 'rgba(0, 0, 255, 0.15)';
+        const width = roi.maxX - roi.minX;
+        const height = roi.maxY - roi.minY;
+        this.ctx.fillRect(roi.minX, roi.minY, width, height);
+        this.ctx.strokeRect(roi.minX, roi.minY, width, height);
+        this.ctx.restore();
     }
 
     clearCanvas() {
