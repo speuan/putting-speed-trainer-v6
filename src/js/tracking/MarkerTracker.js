@@ -77,15 +77,25 @@ export class MarkerTracker {
                 this.ball = finalPosition;
                 this.ballPrevious = finalPosition; // Initialize previous position
                 this.captureBallRegion();
-                this.isSetup = true;
-                this.state = 'ARMED';
-                progressCallback(this);
+                // Render the bounding box at the marked position before arming
+                this.uiController.render({
+                    markers: this.markers,
+                    ball: this.ball,
+                    ballPrevious: this.ballPrevious,
+                    loupe: null,
+                    state: 'AWAITING_BALL',
+                });
+                // Delay arming to allow user to see the feedback
+                setTimeout(() => {
+                    this.isSetup = true;
+                    this.state = 'ARMED';
+                    progressCallback(this);
+                }, 200);
 
                 // Since setup is totally complete, we can remove listeners
                 this.canvas.removeEventListener('touchstart', handleTouchStart);
                 this.canvas.removeEventListener('touchmove', handleTouchMove);
                 this.canvas.removeEventListener('touchend', handleTouchEnd);
-                
                 // this.startDriftDetection(); // We will use a different tracking loop later
             }
         };
