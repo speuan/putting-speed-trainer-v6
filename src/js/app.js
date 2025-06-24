@@ -95,26 +95,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Difference mask
                     diffMask = tracker.constructor.differenceMask(currentROI, referenceROI);
                     // Detection logic: require both a good template match and significant difference
-                    const templateThreshold = 300000;
-                    const diffThreshold = 20;
-                    // Template match with explicit threshold and get bestScore
-                    let bestScore = Infinity;
-                    if (bestMatch) bestScore = bestMatch.score;
-                    const templateDetected = tracker.constructor.roiTemplateMatch(currentROI, ballRegion, templateThreshold);
-                    // Difference detection with explicit threshold and get avgDiff
-                    let avgDiff = 0;
-                    if (currentROI && referenceROI) {
-                        let diffSum = 0;
-                        for (let i = 0; i < currentROI.data.length; i += 4) {
-                            const curGray = 0.299 * currentROI.data[i] + 0.587 * currentROI.data[i+1] + 0.114 * currentROI.data[i+2];
-                            const refGray = 0.299 * referenceROI.data[i] + 0.587 * referenceROI.data[i+1] + 0.114 * referenceROI.data[i+2];
-                            diffSum += Math.abs(curGray - refGray);
-                        }
-                        avgDiff = diffSum / (currentROI.data.length / 4);
-                    }
-                    const diffDetected = avgDiff > diffThreshold;
-                    // Log for debugging
-                    console.log('Live confidence score:', bestScore, 'templateDetected:', templateDetected, 'diffDetected:', diffDetected, 'avgDiff:', avgDiff);
+                    const templateDetected = tracker.constructor.roiTemplateMatch(currentROI, ballRegion);
+                    const diffDetected = tracker.constructor.roiDifference(currentROI, referenceROI);
+                    console.log('Live confidence score:', bestMatch ? bestMatch.score : null, 'templateDetected:', templateDetected, 'diffDetected:', diffDetected);
                     ballDetected = templateDetected && diffDetected;
                     if (!hasCrossedStart && ballDetected) {
                         hasCrossedStart = true;
@@ -142,12 +125,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (liveBallBox) updatedState.liveBallBox = liveBallBox;
             if (diffMask) updatedState.diffMask = diffMask;
             if (liveScore !== null) updatedState.liveScore = liveScore;
-            updatedState.templateDetected = templateDetected;
-            updatedState.diffDetected = diffDetected;
-            updatedState.templateThreshold = templateThreshold;
-            updatedState.templateScore = bestScore;
-            updatedState.diffThreshold = diffThreshold;
-            updatedState.diffScore = avgDiff;
             ui.render(updatedState);
         }
         requestAnimationFrame(animationLoop);
