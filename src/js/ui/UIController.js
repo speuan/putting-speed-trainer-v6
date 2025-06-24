@@ -227,12 +227,17 @@ export class UIController {
 
     drawLiveScore(score) {
         this.ctx.save();
+        const padding = 10;
+        const boxWidth = 140;
+        const boxHeight = 32;
+        const x = this.canvas.width - boxWidth - padding;
+        const y = this.canvas.height - boxHeight - padding;
         // Draw a yellow rectangle background for visibility
         this.ctx.fillStyle = 'rgba(255, 255, 0, 0.85)';
-        this.ctx.fillRect(5, 5, 140, 32);
+        this.ctx.fillRect(x, y, boxWidth, boxHeight);
         this.ctx.font = 'bold 20px Arial';
         this.ctx.fillStyle = 'black';
-        this.ctx.fillText(`Score: ${score.toFixed(0)}`, 15, 30);
+        this.ctx.fillText(`Score: ${score.toFixed(0)}`, x + 10, y + 25);
         this.ctx.restore();
     }
 
