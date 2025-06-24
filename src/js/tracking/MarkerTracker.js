@@ -286,7 +286,7 @@ export class MarkerTracker {
     }
 
     // Utility to get a rectangular ROI around a line, with separate x and y margins
-    getLineROI(line, marginX = 10, marginY = 40) {
+    getLineROI(line, marginX = 5, marginY = 40) {
         // line: {p1: {x, y}, p2: {x, y}}
         // marginX: pixels to expand horizontally, marginY: vertically
         const minX = Math.min(line.p1.x, line.p2.x) - marginX;
