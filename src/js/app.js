@@ -52,12 +52,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const state = tracker.getState();
 
         if (state.state === 'ARMED') {
-            tracker.trackBall(videoElement);
             const { ball, ballPrevious, markers } = tracker.getState();
+            let roi = null;
+            if (markers.length === 4) {
+                if (!hasCrossedStart) {
+                    // Restrict to start line ROI
+                    const startLine = { p1: markers[0], p2: markers[1] };
+                    roi = tracker.getLineROI(startLine, 40); // 40px margin
+                } else if (!hasCrossedEnd) {
+                    // Restrict to end line ROI
+                    const endLine = { p1: markers[2], p2: markers[3] };
+                    roi = tracker.getLineROI(endLine, 40);
+                }
+            }
+            tracker.trackBall(videoElement, roi);
 
             if (ball && ballPrevious && markers.length === 4 && !hasCrossedEnd) {
                 const ballPath = { p1: ballPrevious, p2: ball };
-                
                 if (!hasCrossedStart) {
                     const startLine = { p1: markers[0], p2: markers[1] };
                     if (lineIntersect(ballPath.p1, ballPath.p2, startLine.p1, startLine.p2)) {

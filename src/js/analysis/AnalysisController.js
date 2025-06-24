@@ -93,23 +93,31 @@ export default class AnalysisController {
     }
 
     _processFrame() {
-        this.markerTracker.trackBall(this.videoElement);
+        // Use ROI for start/finish line
         const { ball, ballPrevious, markers } = this.markerTracker.getState();
-
-        if (!ball || !ballPrevious || markers.length < 4) {
+        let roi = null;
+        if (markers && markers.length === 4) {
+            if (this.startTime === null) {
+                const startLine = { p1: markers[0], p2: markers[1] };
+                roi = this.markerTracker.getLineROI(startLine, 40);
+            } else if (this.endTime === null) {
+                const endLine = { p1: markers[2], p2: markers[3] };
+                roi = this.markerTracker.getLineROI(endLine, 40);
+            }
+        }
+        this.markerTracker.trackBall(this.videoElement, roi);
+        const { ball: newBall, ballPrevious: newBallPrevious, markers: newMarkers } = this.markerTracker.getState();
+        if (!newBall || !newBallPrevious || newMarkers.length < 4) {
             return;
         }
-
         const currentTime = this.videoElement.currentTime;
-        const startLine = { p1: markers[0], p2: markers[1] };
-        const endLine = { p1: markers[2], p2: markers[3] };
-        const ballPath = { p1: ballPrevious, p2: ball };
-
+        const startLine = { p1: newMarkers[0], p2: newMarkers[1] };
+        const endLine = { p1: newMarkers[2], p2: newMarkers[3] };
+        const ballPath = { p1: newBallPrevious, p2: newBall };
         if (this.startTime === null && lineIntersect(ballPath.p1, ballPath.p2, startLine.p1, startLine.p2)) {
             this.startTime = currentTime;
             this.uiController.log(`Event: Start line crossed at ${this.startTime.toFixed(3)}s`);
         }
-
         if (this.endTime === null && lineIntersect(ballPath.p1, ballPath.p2, endLine.p1, endLine.p2)) {
             this.endTime = currentTime;
             this.uiController.log(`Event: End line crossed at ${this.endTime.toFixed(3)}s`);
