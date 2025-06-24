@@ -92,6 +92,11 @@ export class UIController {
             this.drawLiveBallBox(state.liveBallBox);
         }
 
+        // Draw live confidence score if present
+        if (typeof state.liveScore === 'number') {
+            this.drawLiveScore(state.liveScore);
+        }
+
         // Draw existing markers
         if (state.markers) {
             state.markers.forEach(marker => this.drawMarker(marker));
@@ -218,6 +223,14 @@ export class UIController {
             }
         }
         this.ctx.putImageData(imageData, roi.minX, roi.minY);
+    }
+
+    drawLiveScore(score) {
+        this.ctx.save();
+        this.ctx.font = '20px Arial';
+        this.ctx.fillStyle = 'yellow';
+        this.ctx.fillText(`Score: ${score.toFixed(0)}`, 10, 30);
+        this.ctx.restore();
     }
 
     clearCanvas() {

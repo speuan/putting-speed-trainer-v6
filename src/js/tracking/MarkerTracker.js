@@ -131,11 +131,11 @@ export class MarkerTracker {
         tempCtx.drawImage(this.videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
         // Start ROI
         const startLine = { p1: this.markers[0], p2: this.markers[1] };
-        const startROI = this.getLineROI(startLine, 40);
+        const startROI = this.getLineROI(startLine, 20);
         this.referenceStartROI = tempCtx.getImageData(startROI.minX, startROI.minY, startROI.maxX - startROI.minX, startROI.maxY - startROI.minY);
         // End ROI
         const endLine = { p1: this.markers[2], p2: this.markers[3] };
-        const endROI = this.getLineROI(endLine, 40);
+        const endROI = this.getLineROI(endLine, 20);
         this.referenceEndROI = tempCtx.getImageData(endROI.minX, endROI.minY, endROI.maxX - endROI.minX, endROI.maxY - endROI.minY);
     }
 
@@ -286,7 +286,7 @@ export class MarkerTracker {
     }
 
     // Utility to get a rectangular ROI around a line
-    getLineROI(line, margin = 30) {
+    getLineROI(line, margin = 20) {
         // line: {p1: {x, y}, p2: {x, y}}
         // margin: pixels to expand around the line
         const minX = Math.min(line.p1.x, line.p2.x) - margin;

@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let ballDetected = false;
         let liveBallBox = null;
         let diffMask = null;
+        let liveScore = null;
         if (state.state === 'ARMED') {
             const { markers, ballRegion, referenceStartROI, referenceEndROI } = tracker;
             if (markers.length === 4 && ballRegion) {
@@ -62,12 +63,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!hasCrossedStart) {
                     // Start ROI
                     const startLine = { p1: markers[0], p2: markers[1] };
-                    roi = tracker.getLineROI(startLine, 40);
+                    roi = tracker.getLineROI(startLine, 20);
                     referenceROI = referenceStartROI;
                 } else if (!hasCrossedEnd) {
                     // End ROI
                     const endLine = { p1: markers[2], p2: markers[3] };
-                    roi = tracker.getLineROI(endLine, 40);
+                    roi = tracker.getLineROI(endLine, 20);
                     referenceROI = referenceEndROI;
                 }
                 if (roi && referenceROI) {
@@ -78,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const tempCtx = tempCanvas.getContext('2d');
                     tempCtx.drawImage(videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
                     const currentROI = tempCtx.getImageData(roi.minX, roi.minY, roi.maxX - roi.minX, roi.maxY - roi.minY);
-                    // Live bounding box
+                    // Live bounding box and score
                     const bestMatch = tracker.constructor.bestTemplateMatchPosition(currentROI, ballRegion);
                     if (bestMatch) {
                         liveBallBox = {
@@ -88,11 +89,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             h: ballRegion.height,
                             score: bestMatch.score
                         };
+                        liveScore = bestMatch.score;
                     }
                     // Difference mask
                     diffMask = tracker.constructor.differenceMask(currentROI, referenceROI);
-                    // Detection logic
-                    ballDetected = tracker.detectBallInROI(videoElement, roi, referenceROI, ballRegion);
+                    // Detection logic: require both a good template match and significant difference
+                    const templateDetected = tracker.constructor.roiTemplateMatch(currentROI, ballRegion);
+                    const diffDetected = tracker.constructor.roiDifference(currentROI, referenceROI);
+                    ballDetected = templateDetected && diffDetected;
                     if (!hasCrossedStart && ballDetected) {
                         hasCrossedStart = true;
                         ui.updateStatus('Recording...');
@@ -118,6 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (roi) updatedState.roi = roi;
             if (liveBallBox) updatedState.liveBallBox = liveBallBox;
             if (diffMask) updatedState.diffMask = diffMask;
+            if (liveScore !== null) updatedState.liveScore = liveScore;
             ui.render(updatedState);
         }
         requestAnimationFrame(animationLoop);
