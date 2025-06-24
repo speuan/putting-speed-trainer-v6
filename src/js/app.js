@@ -97,6 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Detection logic: require both a good template match and significant difference
                     const templateDetected = tracker.constructor.roiTemplateMatch(currentROI, ballRegion);
                     const diffDetected = tracker.constructor.roiDifference(currentROI, referenceROI);
+                    // Log for debugging
                     console.log('Live confidence score:', bestMatch ? bestMatch.score : null, 'templateDetected:', templateDetected, 'diffDetected:', diffDetected);
                     ballDetected = templateDetected && diffDetected;
                     if (!hasCrossedStart && ballDetected) {
@@ -125,6 +126,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (liveBallBox) updatedState.liveBallBox = liveBallBox;
             if (diffMask) updatedState.diffMask = diffMask;
             if (liveScore !== null) updatedState.liveScore = liveScore;
+            updatedState.templateDetected = templateDetected;
+            updatedState.diffDetected = diffDetected;
             ui.render(updatedState);
         }
         requestAnimationFrame(animationLoop);
