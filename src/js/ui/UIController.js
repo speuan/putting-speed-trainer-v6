@@ -92,9 +92,9 @@ export class UIController {
             this.drawLiveBallBox(state.liveBallBox);
         }
 
-        // Draw live confidence score if present
-        if (typeof state.liveScore === 'number') {
-            this.drawLiveScore(state.liveScore);
+        // Draw debug info only in ARMED state
+        if (state.state === 'ARMED' && typeof state.liveScore === 'number') {
+            this.drawDetectionDebug(state.liveScore, state.templateDetected, state.diffDetected);
         }
 
         // Draw existing markers
@@ -225,11 +225,11 @@ export class UIController {
         this.ctx.putImageData(imageData, roi.minX, roi.minY);
     }
 
-    drawLiveScore(score) {
+    drawDetectionDebug(score, templateDetected, diffDetected) {
         this.ctx.save();
         const padding = 10;
-        const boxWidth = 140;
-        const boxHeight = 32;
+        const boxWidth = 220;
+        const boxHeight = 70;
         const x = this.canvas.width - boxWidth - padding;
         const y = this.canvas.height - boxHeight - padding;
         // Draw a yellow rectangle background for visibility
@@ -237,7 +237,10 @@ export class UIController {
         this.ctx.fillRect(x, y, boxWidth, boxHeight);
         this.ctx.font = 'bold 20px Arial';
         this.ctx.fillStyle = 'black';
-        this.ctx.fillText(`Score: ${score.toFixed(0)}`, x + 10, y + 25);
+        this.ctx.fillText(`Score: ${score.toFixed(0)}`, x + 10, y + 30);
+        this.ctx.font = '16px Arial';
+        this.ctx.fillText(`Template: ${templateDetected ? 'YES' : 'NO'}`, x + 10, y + 50);
+        this.ctx.fillText(`Diff: ${diffDetected ? 'YES' : 'NO'}`, x + 120, y + 50);
         this.ctx.restore();
     }
 
