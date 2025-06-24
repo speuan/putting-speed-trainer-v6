@@ -125,6 +125,25 @@ document.addEventListener('DOMContentLoaded', () => {
             if (liveBallBox) updatedState.liveBallBox = liveBallBox;
             if (diffMask) updatedState.diffMask = diffMask;
             if (liveScore !== null) updatedState.liveScore = liveScore;
+            // Only add debug info in ARMED state
+            if (state.state === 'ARMED') {
+                updatedState.templateThreshold = 300000;
+                updatedState.templateScore = bestMatch ? bestMatch.score : null;
+                updatedState.diffThreshold = 20;
+                let avgDiff = 0;
+                if (currentROI && referenceROI) {
+                    let diffSum = 0;
+                    for (let i = 0; i < currentROI.data.length; i += 4) {
+                        const curGray = 0.299 * currentROI.data[i] + 0.587 * currentROI.data[i+1] + 0.114 * currentROI.data[i+2];
+                        const refGray = 0.299 * referenceROI.data[i] + 0.587 * referenceROI.data[i+1] + 0.114 * referenceROI.data[i+2];
+                        diffSum += Math.abs(curGray - refGray);
+                    }
+                    avgDiff = diffSum / (currentROI.data.length / 4);
+                }
+                updatedState.diffScore = avgDiff;
+                updatedState.templateDetected = templateDetected;
+                updatedState.diffDetected = diffDetected;
+            }
             ui.render(updatedState);
         }
         requestAnimationFrame(animationLoop);

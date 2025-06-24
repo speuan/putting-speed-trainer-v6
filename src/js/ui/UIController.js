@@ -226,6 +226,14 @@ export class UIController {
     }
 
     drawDetectionDebug(score, templateDetected, diffDetected) {
+        // Guard: only draw if all values are present
+        if (
+            score === undefined ||
+            templateDetected === undefined ||
+            diffDetected === undefined
+        ) {
+            return;
+        }
         this.ctx.save();
         const padding = 10;
         const boxWidth = 220;
