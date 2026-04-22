@@ -40,6 +40,8 @@ Place four distinct high-contrast physical markers on the floor or mat and tap t
 
 For performance, the app searches near the last known ball position first and only falls back to the wider marked corridor if it loses the ball.
 
+Recording is currently disabled by default in `v7 no-recording` to keep live ball tracking as light as possible on iPhone.
+
 ## Check syntax
 
 ```sh

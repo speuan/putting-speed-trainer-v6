@@ -82,18 +82,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         const ballPath = { p1: trackedState.ballPrevious, p2: trackedState.ball };
                         if (!hasCrossedStart && lineIntersect(ballPath.p1, ballPath.p2, startLine.p1, startLine.p2)) {
                             hasCrossedStart = true;
-                            ui.updateStatus('Recording...');
-                            console.log('Start line crossed, recording started.');
-                            if (recordingController) {
-                                recordingController.startRecording();
-                            }
+                            ui.updateStatus('Tracking to finish...');
+                            console.log('Start line crossed.');
                         } else if (!hasCrossedEnd && hasCrossedStart && lineIntersect(ballPath.p1, ballPath.p2, endLine.p1, endLine.p2)) {
                             hasCrossedEnd = true;
                             ui.updateStatus('Finished!');
-                            console.log('End line crossed, stopping recording.');
-                            if (recordingController) {
-                                recordingController.stopRecording();
-                            }
+                            console.log('End line crossed.');
                         }
                     }
                 }
@@ -192,17 +186,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
 
-            try {
-                recordingController = new RecordingController(camera.stream, (blob) => {
-                    ui.showPendingAnalysis();
-                    // Now, instead of analyzing directly, we provide the UI with the blob
-                    // and the function to call when the user clicks "Analyze"
-                    ui.displayRecordingControls(blob, handleAnalysis);
-                });
-            } catch (error) {
-                recordingController = null;
-                ui.log(`Recording unavailable: ${error.message}`);
-            }
+            recordingController = null;
+            ui.log('Recording disabled in v7 for faster live tracking.');
 
             ui.onCameraStarted();
             requestAnimationFrame(animationLoop);
