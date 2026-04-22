@@ -36,6 +36,8 @@ Open the GitHub Pages URL in Safari. Camera access requires HTTPS, which GitHub 
 
 Tap **Start Camera**, allow camera permission, then use **Setup Markers**. If you want the standalone app experience, use Safari's share button and choose **Add to Home Screen**.
 
+For the most reliable marker tracking, place four distinct high-contrast physical markers on the floor or mat and tap their centers during setup. Tapping plain carpet texture gives the app very little visual information to re-track if the camera moves.
+
 ## Check syntax
 
 ```sh

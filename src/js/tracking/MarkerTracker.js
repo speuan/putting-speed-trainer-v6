@@ -206,7 +206,7 @@ export class MarkerTracker {
         return diffDetected && templateDetected;
     }
 
-    trackBall(videoElement, roi = null) {
+    trackBall(videoElement, roi = null, matchThreshold = 2000000) {
         if (!this.ballRegion) return null;
 
         const tempCanvas = document.createElement('canvas');
@@ -236,6 +236,7 @@ export class MarkerTracker {
         const currentROI = tempCtx.getImageData(minX, minY, width, height);
         const bestMatch = MarkerTracker.bestTemplateMatchPosition(currentROI, this.ballRegion);
         if (!bestMatch) return null;
+        if (bestMatch.score > matchThreshold) return null;
 
         this.ballPrevious = this.ball;
         this.ball = {
@@ -247,6 +248,27 @@ export class MarkerTracker {
             ball: this.ball,
             score: bestMatch.score
         };
+    }
+
+    getPuttCorridorROI(margin = 120) {
+        const points = [...this.markers];
+        if (this.ball) points.push(this.ball);
+
+        if (points.length === 0) {
+            return {
+                minX: 0,
+                minY: 0,
+                maxX: this.videoElement.videoWidth,
+                maxY: this.videoElement.videoHeight
+            };
+        }
+
+        const minX = Math.max(0, Math.floor(Math.min(...points.map(point => point.x)) - margin));
+        const maxX = Math.min(this.videoElement.videoWidth, Math.ceil(Math.max(...points.map(point => point.x)) + margin));
+        const minY = Math.max(0, Math.floor(Math.min(...points.map(point => point.y)) - margin));
+        const maxY = Math.min(this.videoElement.videoHeight, Math.ceil(Math.max(...points.map(point => point.y)) + margin));
+
+        return { minX, maxX, minY, maxY };
     }
 
     captureMarkerRegions() {
