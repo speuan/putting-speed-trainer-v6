@@ -15,6 +15,8 @@ export class MarkerTracker {
         // Store reference images for start and finish ROIs
         this.referenceStartROI = null;
         this.referenceEndROI = null;
+        this.lastMarkerTrackAt = 0;
+        this.markerTrackIntervalMs = 150;
     }
 
     getState() {
@@ -139,9 +141,18 @@ export class MarkerTracker {
         this.referenceEndROI = tempCtx.getImageData(endROI.minX, endROI.minY, endROI.maxX - endROI.minX, endROI.maxY - endROI.minY);
     }
 
+    updateReferenceROI(kind, imageData) {
+        if (kind === 'start') {
+            this.referenceStartROI = imageData;
+        } else if (kind === 'end') {
+            this.referenceEndROI = imageData;
+        }
+    }
+
     // Difference detection: returns true if difference exceeds threshold
     static roiDifference(currentROI, referenceROI, threshold = 30) {
         if (!currentROI || !referenceROI) return false;
+        if (currentROI.width !== referenceROI.width || currentROI.height !== referenceROI.height) return false;
         let diffSum = 0;
         for (let i = 0; i < currentROI.data.length; i += 4) {
             // Use grayscale diff for robustness
@@ -239,6 +250,7 @@ export class MarkerTracker {
     }
 
     captureMarkerRegions() {
+        this.markerRegions = [];
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = this.videoElement.videoWidth;
         tempCanvas.height = this.videoElement.videoHeight;
@@ -251,6 +263,37 @@ export class MarkerTracker {
             this.markerRegions.push(imageData);
         });
         console.log('Marker regions captured.');
+    }
+
+    trackMarkers(searchRadius = 30) {
+        if (!this.isSetup || this.markers.length !== 4 || this.markerRegions.length !== 4) {
+            return false;
+        }
+
+        const now = performance.now();
+        if (now - this.lastMarkerTrackAt < this.markerTrackIntervalMs) {
+            return false;
+        }
+        this.lastMarkerTrackAt = now;
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = this.videoElement.videoWidth;
+        tempCanvas.height = this.videoElement.videoHeight;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(this.videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
+        const currentFrameData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+
+        const nextMarkers = this.markers.map((marker, index) => {
+            const markerRegion = this.markerRegions[index];
+            return this._findBestMatch(currentFrameData, markerRegion, marker, searchRadius);
+        });
+
+        if (nextMarkers.some(marker => !Number.isFinite(marker.x) || !Number.isFinite(marker.y))) {
+            return false;
+        }
+
+        this.markers = nextMarkers;
+        return true;
     }
 
     startDriftDetection() {
@@ -302,6 +345,19 @@ export class MarkerTracker {
             endY = Math.min(endY, Math.ceil(roi.maxY - templateData.height));
         }
 
+        startX = Math.max(0, startX);
+        startY = Math.max(0, startY);
+        endX = Math.min(frameData.width - templateData.width, endX);
+        endY = Math.min(frameData.height - templateData.height, endY);
+
+        if (startX > endX || startY > endY) {
+            return {
+                x: searchCenter.x,
+                y: searchCenter.y,
+                score: Infinity
+            };
+        }
+
         for (let y = startY; y <= endY; y++) {
             for (let x = startX; x <= endX; x++) {
                 let ssd = 0; // Sum of Squared Differences
@@ -324,7 +380,8 @@ export class MarkerTracker {
         }
         return {
             x: bestMatch.x + templateData.width / 2,
-            y: bestMatch.y + templateData.height / 2
+            y: bestMatch.y + templateData.height / 2,
+            score: bestMatch.score
         };
     }
 
@@ -372,6 +429,7 @@ export class MarkerTracker {
     // Return a mask of significant difference pixels in the ROI (for visualization)
     static differenceMask(currentROI, referenceROI, threshold = 30) {
         if (!currentROI || !referenceROI) return null;
+        if (currentROI.width !== referenceROI.width || currentROI.height !== referenceROI.height) return null;
         const mask = new Uint8ClampedArray(currentROI.width * currentROI.height);
         for (let y = 0; y < currentROI.height; y++) {
             for (let x = 0; x < currentROI.width; x++) {

@@ -49,7 +49,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let hasCrossedEnd = false;
 
     function animationLoop() {
-        const state = tracker.getState();
+        let state = tracker.getState();
+
+        if (state.state === 'ARMED') {
+            tracker.trackMarkers();
+            state = tracker.getState();
+        }
 
         let roi = null;
         let ballDetected = false;
@@ -115,6 +120,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (recordingController) {
                             recordingController.stopRecording();
                         }
+                    } else if (!ballDetected) {
+                        tracker.updateReferenceROI(hasCrossedStart ? 'end' : 'start', currentROI);
                     }
                 }
             }
