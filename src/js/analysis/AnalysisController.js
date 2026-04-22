@@ -12,6 +12,7 @@ export default class AnalysisController {
         this.startTime = null;
         this.endTime = null;
         this.resolveAnalysis = null;
+        this.rejectAnalysis = null;
 
         // Assume a common framerate; we can adjust this if needed.
         this.FRAME_RATE = 30;
@@ -23,8 +24,9 @@ export default class AnalysisController {
 
     analyzeVideo(videoBlob) {
         this.uiController.log('Analysis: Starting analysis...');
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             this.resolveAnalysis = resolve;
+            this.rejectAnalysis = reject;
             this.startTime = null;
             this.endTime = null;
 
@@ -44,7 +46,8 @@ export default class AnalysisController {
                     this.uiController.log('Analysis: Video playback engine started.');
                 } catch (err) {
                     this.uiController.log(`Analysis Error: play() failed: ${err.message}`);
-                    return; // Can't proceed
+                    this._failAnalysis(err);
+                    return;
                 }
                 
                 this.uiController.log('Analysis: Beginning frame-by-frame seeking.');
@@ -61,6 +64,7 @@ export default class AnalysisController {
             this.videoElement.addEventListener('error', (e) => {
                 const error = e.target.error;
                 this.uiController.log(`Analysis Error: ${error.message} (Code: ${error.code})`);
+                this._failAnalysis(error);
            });
         });
     }
@@ -75,8 +79,8 @@ export default class AnalysisController {
         if (isDone || isEndOfVideo) {
             // --- Analysis is complete ---
             this.uiController.log('Analysis: Finished processing.');
-            this.uiController.log(`Final Start Time: ${this.startTime ? this.startTime.toFixed(3) + 's' : 'Not found'}`);
-            this.uiController.log(`Final End Time: ${this.endTime ? this.endTime.toFixed(3) + 's' : 'Not found'}`);
+            this.uiController.log(`Final Start Time: ${this.startTime !== null ? this.startTime.toFixed(3) + 's' : 'Not found'}`);
+            this.uiController.log(`Final End Time: ${this.endTime !== null ? this.endTime.toFixed(3) + 's' : 'Not found'}`);
             
             // Cleanup
             this.videoElement.removeEventListener('seeked', this._boundOnSeeked);
@@ -89,6 +93,18 @@ export default class AnalysisController {
         } else {
             // --- Seek to the next frame ---
             this.videoElement.currentTime += this.FRAME_STEP;
+        }
+    }
+
+    _failAnalysis(error) {
+        this.videoElement.removeEventListener('seeked', this._boundOnSeeked);
+        if (this.videoElement.src) {
+            URL.revokeObjectURL(this.videoElement.src);
+            this.videoElement.src = '';
+        }
+
+        if (this.rejectAnalysis) {
+            this.rejectAnalysis(error);
         }
     }
 

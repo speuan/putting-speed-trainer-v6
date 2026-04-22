@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Putting Speed Trainer icon">
+  <rect width="512" height="512" rx="96" fill="#0d3b2e"/>
+  <path d="M94 336c75-54 166-70 324-70" fill="none" stroke="#7ee081" stroke-width="34" stroke-linecap="round"/>
+  <path d="M106 390c88-40 184-48 302-26" fill="none" stroke="#f2c14e" stroke-width="24" stroke-linecap="round"/>
+  <circle cx="158" cy="240" r="38" fill="#ffffff"/>
+  <path d="M324 94v204" fill="none" stroke="#ffffff" stroke-width="24" stroke-linecap="round"/>
+  <path d="M324 104h84l-22 40 22 40h-84z" fill="#ff5a5f"/>
+</svg>

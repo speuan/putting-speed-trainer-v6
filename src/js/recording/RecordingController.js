@@ -1,14 +1,26 @@
 export class RecordingController {
     constructor(stream, onRecordingComplete) {
-        if (!MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
-            console.error("VP9 codec is not supported");
-            return;
+        if (!window.MediaRecorder) {
+            throw new Error('MediaRecorder is not available in this browser.');
         }
-        
+
         this.stream = stream;
         this.onRecordingComplete = onRecordingComplete;
         this.mediaRecorder = null;
         this.recordedChunks = [];
+        this.mimeType = this.getSupportedMimeType();
+    }
+
+    getSupportedMimeType() {
+        const candidates = [
+            'video/webm;codecs=vp9',
+            'video/webm;codecs=vp8',
+            'video/webm',
+            'video/mp4;codecs=h264',
+            'video/mp4'
+        ];
+
+        return candidates.find(type => MediaRecorder.isTypeSupported(type)) || '';
     }
 
     startRecording() {
@@ -18,7 +30,7 @@ export class RecordingController {
         }
 
         this.recordedChunks = [];
-        const options = { mimeType: 'video/webm;codecs=vp9' };
+        const options = this.mimeType ? { mimeType: this.mimeType } : undefined;
         this.mediaRecorder = new MediaRecorder(this.stream, options);
 
         this.mediaRecorder.ondataavailable = (event) => {
@@ -28,12 +40,12 @@ export class RecordingController {
         };
 
         this.mediaRecorder.onstop = () => {
-            const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
+            const blob = new Blob(this.recordedChunks, { type: this.mediaRecorder.mimeType || this.mimeType || 'video/webm' });
             this.onRecordingComplete(blob);
         };
 
         this.mediaRecorder.start();
-        console.log("Recording started.");
+        console.log(`Recording started with ${this.mediaRecorder.mimeType || 'browser default mime type'}.`);
     }
 
     stopRecording() {

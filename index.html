@@ -3,13 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Marker Detection Setup</title>
+    <title>Putting Speed Trainer</title>
     <link rel="stylesheet" href="src/css/styles.css">
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="src/assets/icon.svg" type="image/svg+xml">
     <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="PuttTracker">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
 </head>
 <body>
-    <h1>Marker Detection</h1>
+    <h1>Putting Speed Trainer</h1>
     <div class="container">
         <div class="video-container">
             <video id="video" playsinline autoplay muted></video>
@@ -41,7 +46,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
+                navigator.serviceWorker.register('./service-worker.js')
                     .then(registration => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
                     })

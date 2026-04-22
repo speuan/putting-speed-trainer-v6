@@ -195,6 +195,49 @@ export class MarkerTracker {
         return diffDetected && templateDetected;
     }
 
+    trackBall(videoElement, roi = null) {
+        if (!this.ballRegion) return null;
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = videoElement.videoWidth;
+        tempCanvas.height = videoElement.videoHeight;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
+
+        const searchArea = roi || {
+            minX: 0,
+            minY: 0,
+            maxX: tempCanvas.width,
+            maxY: tempCanvas.height
+        };
+
+        const minX = Math.max(0, Math.floor(searchArea.minX));
+        const minY = Math.max(0, Math.floor(searchArea.minY));
+        const maxX = Math.min(tempCanvas.width, Math.ceil(searchArea.maxX));
+        const maxY = Math.min(tempCanvas.height, Math.ceil(searchArea.maxY));
+        const width = maxX - minX;
+        const height = maxY - minY;
+
+        if (width < this.ballRegion.width || height < this.ballRegion.height) {
+            return null;
+        }
+
+        const currentROI = tempCtx.getImageData(minX, minY, width, height);
+        const bestMatch = MarkerTracker.bestTemplateMatchPosition(currentROI, this.ballRegion);
+        if (!bestMatch) return null;
+
+        this.ballPrevious = this.ball;
+        this.ball = {
+            x: minX + bestMatch.x + this.ballRegion.width / 2,
+            y: minY + bestMatch.y + this.ballRegion.height / 2
+        };
+
+        return {
+            ball: this.ball,
+            score: bestMatch.score
+        };
+    }
+
     captureMarkerRegions() {
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = this.videoElement.videoWidth;
@@ -289,10 +332,10 @@ export class MarkerTracker {
     getLineROI(line, marginX = 5, marginY = 40) {
         // line: {p1: {x, y}, p2: {x, y}}
         // marginX: pixels to expand horizontally, marginY: vertically
-        const minX = Math.min(line.p1.x, line.p2.x) - marginX;
-        const maxX = Math.max(line.p1.x, line.p2.x) + marginX;
-        const minY = Math.min(line.p1.y, line.p2.y) - marginY;
-        const maxY = Math.max(line.p1.y, line.p2.y) + marginY;
+        const minX = Math.max(0, Math.floor(Math.min(line.p1.x, line.p2.x) - marginX));
+        const maxX = Math.min(this.videoElement.videoWidth, Math.ceil(Math.max(line.p1.x, line.p2.x) + marginX));
+        const minY = Math.max(0, Math.floor(Math.min(line.p1.y, line.p2.y) - marginY));
+        const maxY = Math.min(this.videoElement.videoHeight, Math.ceil(Math.max(line.p1.y, line.p2.y) + marginY));
         return { minX, maxX, minY, maxY };
     }
 

@@ -56,6 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let liveBallBox = null;
         let diffMask = null;
         let liveScore = null;
+        let templateDetected = false;
+        let diffDetected = false;
         if (state.state === 'ARMED') {
             const { markers, ballRegion, referenceStartROI, referenceEndROI } = tracker;
             if (markers.length === 4 && ballRegion) {
@@ -95,8 +97,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Difference mask
                     diffMask = tracker.constructor.differenceMask(currentROI, referenceROI);
                     // Detection logic: require both a good template match and significant difference
-                    const templateDetected = tracker.constructor.roiTemplateMatch(currentROI, ballRegion);
-                    const diffDetected = tracker.constructor.roiDifference(currentROI, referenceROI);
+                    templateDetected = tracker.constructor.roiTemplateMatch(currentROI, ballRegion);
+                    diffDetected = tracker.constructor.roiDifference(currentROI, referenceROI);
                     console.log('Live confidence score:', bestMatch ? bestMatch.score : null, 'templateDetected:', templateDetected, 'diffDetected:', diffDetected);
                     ballDetected = templateDetected && diffDetected;
                     if (!hasCrossedStart && ballDetected) {
@@ -125,6 +127,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (liveBallBox) updatedState.liveBallBox = liveBallBox;
             if (diffMask) updatedState.diffMask = diffMask;
             if (liveScore !== null) updatedState.liveScore = liveScore;
+            updatedState.templateDetected = templateDetected;
+            updatedState.diffDetected = diffDetected;
             ui.render(updatedState);
         }
         requestAnimationFrame(animationLoop);
@@ -146,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 try {
                     const results = await analysisController.analyzeVideo(blob);
-                    if (results.startTime && results.endTime) {
+                    if (results.startTime !== null && results.endTime !== null) {
                         const elapsedTime = results.endTime - results.startTime;
                         
                         // --- Speed Calculation ---
@@ -180,12 +184,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
 
-            recordingController = new RecordingController(camera.stream, (blob) => {
-                ui.showPendingAnalysis();
-                // Now, instead of analyzing directly, we provide the UI with the blob
-                // and the function to call when the user clicks "Analyze"
-                ui.displayRecordingControls(blob, handleAnalysis);
-            });
+            try {
+                recordingController = new RecordingController(camera.stream, (blob) => {
+                    ui.showPendingAnalysis();
+                    // Now, instead of analyzing directly, we provide the UI with the blob
+                    // and the function to call when the user clicks "Analyze"
+                    ui.displayRecordingControls(blob, handleAnalysis);
+                });
+            } catch (error) {
+                recordingController = null;
+                ui.log(`Recording unavailable: ${error.message}`);
+            }
 
             ui.onCameraStarted();
             requestAnimationFrame(animationLoop);

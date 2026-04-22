@@ -1,0 +1,10 @@
+{
+  "name": "putting-speed-trainer-v6",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check src/js/app.js && node --check src/js/analysis/AnalysisController.js && node --check src/js/camera/CameraController.js && node --check src/js/recording/RecordingController.js && node --check src/js/tracking/MarkerTracker.js && node --check src/js/ui/UIController.js && node --check src/js/utils/geometry.js && node --check service-worker.js",
+    "serve": "python -m http.server 8080"
+  }
+}
