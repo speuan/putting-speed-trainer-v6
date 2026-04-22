@@ -38,6 +38,8 @@ Tap **Start Camera**, allow camera permission, then use **Setup Markers**. If yo
 
 For the most reliable marker tracking, place four distinct high-contrast physical markers on the floor or mat and tap their centers during setup. Tapping plain carpet texture gives the app very little visual information to re-track if the camera moves.
 
+For performance, the app searches near the last known ball position first and only falls back to the wider marked corridor if it loses the ball.
+
 ## Check syntax
 
 ```sh

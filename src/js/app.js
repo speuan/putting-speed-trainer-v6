@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const startLine = { p1: markers[0], p2: markers[1] };
                 const endLine = { p1: markers[2], p2: markers[3] };
                 const trackingROI = tracker.getPuttCorridorROI();
-                const trackedBall = tracker.trackBall(videoElement, trackingROI);
+                const trackedBall = tracker.trackBallLocalFirst(videoElement, trackingROI);
                 const trackedState = tracker.getState();
 
                 if (trackedBall) {

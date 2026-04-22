@@ -250,6 +250,31 @@ export class MarkerTracker {
         };
     }
 
+    trackBallLocalFirst(videoElement, corridorROI, localRadius = 90) {
+        if (!this.ball) {
+            return this.trackBall(videoElement, corridorROI);
+        }
+
+        const localROI = this.getBallSearchROI(localRadius);
+        const localMatch = this.trackBall(videoElement, localROI);
+        if (localMatch) return localMatch;
+
+        return this.trackBall(videoElement, corridorROI);
+    }
+
+    getBallSearchROI(radius = 90) {
+        if (!this.ball) {
+            return this.getPuttCorridorROI();
+        }
+
+        return {
+            minX: Math.max(0, Math.floor(this.ball.x - radius)),
+            maxX: Math.min(this.videoElement.videoWidth, Math.ceil(this.ball.x + radius)),
+            minY: Math.max(0, Math.floor(this.ball.y - radius)),
+            maxY: Math.min(this.videoElement.videoHeight, Math.ceil(this.ball.y + radius))
+        };
+    }
+
     getPuttCorridorROI(margin = 120) {
         const points = [...this.markers];
         if (this.ball) points.push(this.ball);
