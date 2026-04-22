@@ -58,11 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let liveScore = null;
         let templateDetected = false;
         let diffDetected = false;
-        let markerTracked = false;
         if (state.state === 'ARMED') {
-            markerTracked = tracker.trackMarkers();
-            state = tracker.getState();
-
             const { markers, ballRegion, referenceStartROI, referenceEndROI } = tracker;
             if (markers.length === 4 && ballRegion) {
                 const startLine = { p1: markers[0], p2: markers[1] };
@@ -123,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Difference mask
                     diffMask = tracker.constructor.differenceMask(currentROI, referenceROI);
                     diffDetected = tracker.constructor.roiDifference(currentROI, referenceROI);
-                    console.log('Live confidence score:', liveScore, 'templateDetected:', templateDetected, 'diffDetected:', diffDetected, 'markerTracked:', markerTracked);
+                    console.log('Live confidence score:', liveScore, 'templateDetected:', templateDetected, 'diffDetected:', diffDetected);
                     ballDetected = templateDetected && diffDetected;
                     if (!ballDetected) {
                         tracker.updateReferenceROI(hasCrossedStart ? 'end' : 'start', currentROI);
@@ -141,7 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (liveScore !== null) updatedState.liveScore = liveScore;
             updatedState.templateDetected = templateDetected;
             updatedState.diffDetected = diffDetected;
-            updatedState.markerTracked = markerTracked;
             ui.render(updatedState);
         }
         requestAnimationFrame(animationLoop);
