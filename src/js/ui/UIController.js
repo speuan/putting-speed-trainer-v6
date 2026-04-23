@@ -24,19 +24,25 @@ export class UIController {
         this.startCameraBtn.disabled = true;
         this.switchCameraBtn.disabled = false;
         this.setupMarkersBtn.disabled = false;
-        this.instructionsEl.textContent = 'Camera started. Click "Setup Markers" to begin.';
+        this.instructionsEl.textContent = 'Camera started. Set gate distance, then tap "Setup Markers".';
         this.updateStatus('Ready');
     }
 
     startMarkerSetup() {
         this.setupMarkersBtn.disabled = true;
-        this.instructionsEl.textContent = 'Click on the four corners of the putting area.';
+        this.instructionsEl.textContent = 'Tap two start-gate markers, then two finish-gate markers.';
         this.canvas.style.pointerEvents = 'auto'; 
         this.updateStatus('Setting Markers');
     }
 
     promptForMarker(markerIndex) {
-        this.instructionsEl.textContent = `Click to set marker #${markerIndex + 1}`;
+        const labels = [
+            'Tap start gate marker 1',
+            'Tap start gate marker 2',
+            'Tap finish gate marker 1',
+            'Tap finish gate marker 2'
+        ];
+        this.instructionsEl.textContent = labels[markerIndex] || `Tap marker #${markerIndex + 1}`;
     }
 
     drawMarker(point) {
@@ -52,14 +58,8 @@ export class UIController {
         this.updateStatus('Setup Complete');
     }
 
-    promptForBall() {
-        this.instructionsEl.textContent = 'Tap the ball to arm the system.';
-        this.canvas.style.pointerEvents = 'auto';
-        this.updateStatus('Awaiting Ball');
-    }
-
     onArmingComplete() {
-        this.instructionsEl.textContent = 'System Armed. Ready for putt.';
+        this.instructionsEl.textContent = 'Gate timing armed. Putt through the start gate, then finish gate.';
         this.canvas.style.pointerEvents = 'none';
         this.updateStatus('Armed');
     }
@@ -237,10 +237,9 @@ export class UIController {
         this.ctx.fillRect(x, y, boxWidth, boxHeight);
         this.ctx.font = 'bold 20px Arial';
         this.ctx.fillStyle = 'black';
-        this.ctx.fillText(`Score: ${score.toFixed(0)}`, x + 10, y + 30);
+        this.ctx.fillText(`Diff: ${score.toFixed(1)}`, x + 10, y + 30);
         this.ctx.font = '16px Arial';
-        this.ctx.fillText(`Template: ${templateDetected ? 'YES' : 'NO'}`, x + 10, y + 50);
-        this.ctx.fillText(`Diff: ${diffDetected ? 'YES' : 'NO'}`, x + 120, y + 50);
+        this.ctx.fillText(`Gate: ${diffDetected ? 'YES' : 'NO'}`, x + 10, y + 50);
         this.ctx.restore();
     }
 

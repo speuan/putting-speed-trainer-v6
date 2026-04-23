@@ -1,9 +1,6 @@
 import { CameraController } from './camera/CameraController.js';
 import { UIController } from './ui/UIController.js';
 import { MarkerTracker } from './tracking/MarkerTracker.js';
-import { lineIntersect, getDistance } from './utils/geometry.js';
-import { RecordingController } from './recording/RecordingController.js';
-import AnalysisController from './analysis/AnalysisController.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // Video and Canvas elements
@@ -18,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusIndicatorEl = document.getElementById('status-indicator');
     const resultsContainerEl = document.getElementById('results-container');
     const speedDisplayEl = document.getElementById('speed-display');
+    const gateDistanceInputEl = document.getElementById('gate-distance-ft');
     const recordingControlsEl = document.getElementById('recording-controls');
     const replayContainerEl = document.getElementById('replay-container');
     const replayVideoEl = document.getElementById('replay-video');
@@ -40,57 +38,41 @@ document.addEventListener('DOMContentLoaded', () => {
         closeReplayBtn
     });
     const tracker = new MarkerTracker(videoElement, canvasElement, ui);
-    const analysisController = new AnalysisController(replayVideoEl, ui, tracker);
-    let recordingController;
 
     // State
     let isMarkerSetupActive = false;
     let hasCrossedStart = false;
     let hasCrossedEnd = false;
+    let startTimeMs = null;
+    let finishTimeMs = null;
+    let animationLoopStarted = false;
+
+    function getGateDistanceFt() {
+        const distance = Number.parseFloat(gateDistanceInputEl.value);
+        return Number.isFinite(distance) && distance > 0 ? distance : 6;
+    }
+
+    function getCurrentFrameROI(roi) {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = videoElement.videoWidth;
+        tempCanvas.height = videoElement.videoHeight;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
+        return tempCtx.getImageData(roi.minX, roi.minY, roi.maxX - roi.minX, roi.maxY - roi.minY);
+    }
 
     function animationLoop() {
         let state = tracker.getState();
 
         let roi = null;
-        let ballDetected = false;
-        let liveBallBox = null;
         let diffMask = null;
         let liveScore = null;
-        let templateDetected = false;
         let diffDetected = false;
         if (state.state === 'ARMED') {
-            const { markers, ballRegion, referenceStartROI, referenceEndROI } = tracker;
-            if (markers.length === 4 && ballRegion) {
+            const { markers, referenceStartROI, referenceEndROI } = tracker;
+            if (markers.length === 4) {
                 const startLine = { p1: markers[0], p2: markers[1] };
                 const endLine = { p1: markers[2], p2: markers[3] };
-                const trackingROI = tracker.getPuttCorridorROI();
-                const trackedBall = tracker.trackBallLocalFirst(videoElement, trackingROI);
-                const trackedState = tracker.getState();
-
-                if (trackedBall) {
-                    liveBallBox = {
-                        x: trackedBall.ball.x,
-                        y: trackedBall.ball.y,
-                        w: ballRegion.width,
-                        h: ballRegion.height,
-                        score: trackedBall.score
-                    };
-                    liveScore = trackedBall.score;
-                    templateDetected = true;
-
-                    if (trackedState.ballPrevious && trackedState.ball) {
-                        const ballPath = { p1: trackedState.ballPrevious, p2: trackedState.ball };
-                        if (!hasCrossedStart && lineIntersect(ballPath.p1, ballPath.p2, startLine.p1, startLine.p2)) {
-                            hasCrossedStart = true;
-                            ui.updateStatus('Tracking to finish...');
-                            console.log('Start line crossed.');
-                        } else if (!hasCrossedEnd && hasCrossedStart && lineIntersect(ballPath.p1, ballPath.p2, endLine.p1, endLine.p2)) {
-                            hasCrossedEnd = true;
-                            ui.updateStatus('Finished!');
-                            console.log('End line crossed.');
-                        }
-                    }
-                }
 
                 let referenceROI = null;
                 if (!hasCrossedStart) {
@@ -103,19 +85,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     referenceROI = referenceEndROI;
                 }
                 if (roi && referenceROI) {
-                    // Extract current ROI image
-                    const tempCanvas = document.createElement('canvas');
-                    tempCanvas.width = videoElement.videoWidth;
-                    tempCanvas.height = videoElement.videoHeight;
-                    const tempCtx = tempCanvas.getContext('2d');
-                    tempCtx.drawImage(videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
-                    const currentROI = tempCtx.getImageData(roi.minX, roi.minY, roi.maxX - roi.minX, roi.maxY - roi.minY);
-                    // Difference mask
+                    const currentROI = getCurrentFrameROI(roi);
                     diffMask = tracker.constructor.differenceMask(currentROI, referenceROI);
-                    diffDetected = tracker.constructor.roiDifference(currentROI, referenceROI);
-                    console.log('Live confidence score:', liveScore, 'templateDetected:', templateDetected, 'diffDetected:', diffDetected);
-                    ballDetected = templateDetected && diffDetected;
-                    if (!ballDetected) {
+                    liveScore = tracker.constructor.roiDifferenceScore(currentROI, referenceROI);
+                    diffDetected = liveScore > 30;
+
+                    if (!hasCrossedStart && diffDetected) {
+                        hasCrossedStart = true;
+                        startTimeMs = performance.now();
+                        ui.updateStatus('Start detected. Watching finish gate...');
+                        console.log('Start gate triggered.');
+                    } else if (!hasCrossedEnd && hasCrossedStart && diffDetected) {
+                        hasCrossedEnd = true;
+                        finishTimeMs = performance.now();
+                        const elapsedSeconds = (finishTimeMs - startTimeMs) / 1000;
+                        const speedFps = getGateDistanceFt() / elapsedSeconds;
+                        const speedMph = speedFps * 0.681818;
+
+                        ui.showResults(speedMph);
+                        ui.updateStatus('Complete');
+                        console.log(`Finish gate triggered. Speed: ${speedMph.toFixed(2)} mph`);
+                    } else if (!diffDetected) {
                         tracker.updateReferenceROI(hasCrossedStart ? 'end' : 'start', currentROI);
                     }
                 }
@@ -126,10 +116,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const updatedState = tracker.getState();
             updatedState.videoElement = videoElement;
             if (roi) updatedState.roi = roi;
-            if (liveBallBox) updatedState.liveBallBox = liveBallBox;
             if (diffMask) updatedState.diffMask = diffMask;
             if (liveScore !== null) updatedState.liveScore = liveScore;
-            updatedState.templateDetected = templateDetected;
+            updatedState.templateDetected = false;
             updatedState.diffDetected = diffDetected;
             ui.render(updatedState);
         }
@@ -146,51 +135,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const aspectRatio = videoElement.videoWidth / videoElement.videoHeight;
             videoContainer.style.height = `${videoContainer.clientWidth / aspectRatio}px`;
             
-            const handleAnalysis = async (blob) => {
-                ui.updateStatus('Analyzing...');
-                ui.prepareForAnalysis();
-                
-                try {
-                    const results = await analysisController.analyzeVideo(blob);
-                    if (results.startTime !== null && results.endTime !== null) {
-                        const elapsedTime = results.endTime - results.startTime;
-                        
-                        // --- Speed Calculation ---
-                        const REAL_WORLD_DISTANCE_FT = 1; 
-                        const { markers } = tracker.getState();
-                        const pixelDistanceOfKnownWidth = getDistance(markers[0], markers[1]);
-                        const pixelsPerFoot = pixelDistanceOfKnownWidth / REAL_WORLD_DISTANCE_FT;
-                        
-                        const startLineCenter = { x: (markers[0].x + markers[1].x) / 2, y: (markers[0].y + markers[1].y) / 2 };
-                        const endLineCenter = { x: (markers[2].x + markers[3].x) / 2, y: (markers[2].y + markers[3].y) / 2 };
-                        const puttPixelDistance = getDistance(startLineCenter, endLineCenter);
-                        const puttDistanceFt = puttPixelDistance / pixelsPerFoot;
-                        
-                        const speedFps = puttDistanceFt / elapsedTime;
-                        const speedMph = speedFps * 0.681818;
-
-                        ui.showResults(speedMph);
-                        ui.updateStatus('Complete');
-                    } else {
-                        ui.updateStatus('Analysis failed. Try again.');
-                        ui.log('Analysis failed: Could not find start or end time.');
-                    }
-                } catch (error) {
-                    ui.updateStatus('Error during analysis.');
-                    ui.log(`Error: ${error.message}`);
-                    console.error('An error occurred during video analysis:', error);
-                } finally {
-                    ui.finishAnalysis();
-                    hasCrossedStart = false;
-                    hasCrossedEnd = false;
-                }
-            };
-
-            recordingController = null;
-            ui.log('Recording disabled in v7 for faster live tracking.');
+            ui.log('v8 gate timing: recording and ball tracking disabled.');
 
             ui.onCameraStarted();
-            requestAnimationFrame(animationLoop);
+            if (!animationLoopStarted) {
+                animationLoopStarted = true;
+                requestAnimationFrame(animationLoop);
+            }
         } catch (error) {
             console.error('Failed to start camera:', error);
             instructionsEl.textContent = 'Could not start camera. Please check permissions.';
@@ -210,6 +161,8 @@ document.addEventListener('DOMContentLoaded', () => {
         isMarkerSetupActive = true;
         hasCrossedStart = false;
         hasCrossedEnd = false;
+        startTimeMs = null;
+        finishTimeMs = null;
         resultsContainerEl.style.display = 'none'; // Hide old results
         recordingControlsEl.innerHTML = ''; // Clear old controls
         ui.clearLogs();
@@ -225,9 +178,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (markerCount < 4) {
                     ui.promptForMarker(markerCount);
                 }
-            } else if (state.state === 'AWAITING_BALL') {
-                ui.onSetupComplete();
-                ui.promptForBall();
             } else if (state.state === 'ARMED') {
                 ui.onArmingComplete();
                 isMarkerSetupActive = false;

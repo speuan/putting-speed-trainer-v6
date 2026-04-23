@@ -11,7 +11,7 @@ export class MarkerTracker {
         this.ball = null;
         this.ballPrevious = null;
         this.ballRegion = null;
-        this.state = 'IDLE'; // IDLE, AWAITING_MARKERS, AWAITING_BALL, ARMED
+        this.state = 'IDLE'; // IDLE, AWAITING_MARKERS, ARMED
         // Store reference images for start and finish ROIs
         this.referenceStartROI = null;
         this.referenceEndROI = null;
@@ -74,35 +74,16 @@ export class MarkerTracker {
                 progressCallback(this); // Pass the whole tracker object
 
                 if (this.markers.length === 4) {
-                    this.state = 'AWAITING_BALL';
                     this.captureMarkerRegions();
                     this.captureReferenceROIs();
-                    progressCallback(this);
-                }
-            } else if (this.state === 'AWAITING_BALL') {
-                this.ball = finalPosition;
-                this.ballPrevious = finalPosition; // Initialize previous position
-                this.captureBallRegion();
-                // Render the bounding box at the marked position before arming
-                this.uiController.render({
-                    markers: this.markers,
-                    ball: this.ball,
-                    ballPrevious: this.ballPrevious,
-                    loupe: null,
-                    state: 'AWAITING_BALL',
-                });
-                // Delay arming to allow user to see the feedback
-                setTimeout(() => {
                     this.isSetup = true;
                     this.state = 'ARMED';
                     progressCallback(this);
-                }, 200);
 
-                // Since setup is totally complete, we can remove listeners
-                this.canvas.removeEventListener('touchstart', handleTouchStart);
-                this.canvas.removeEventListener('touchmove', handleTouchMove);
-                this.canvas.removeEventListener('touchend', handleTouchEnd);
-                // this.startDriftDetection(); // We will use a different tracking loop later
+                    this.canvas.removeEventListener('touchstart', handleTouchStart);
+                    this.canvas.removeEventListener('touchmove', handleTouchMove);
+                    this.canvas.removeEventListener('touchend', handleTouchEnd);
+                }
             }
         };
 
@@ -153,6 +134,12 @@ export class MarkerTracker {
     static roiDifference(currentROI, referenceROI, threshold = 30) {
         if (!currentROI || !referenceROI) return false;
         if (currentROI.width !== referenceROI.width || currentROI.height !== referenceROI.height) return false;
+        return MarkerTracker.roiDifferenceScore(currentROI, referenceROI) > threshold;
+    }
+
+    static roiDifferenceScore(currentROI, referenceROI) {
+        if (!currentROI || !referenceROI) return 0;
+        if (currentROI.width !== referenceROI.width || currentROI.height !== referenceROI.height) return 0;
         let diffSum = 0;
         for (let i = 0; i < currentROI.data.length; i += 4) {
             // Use grayscale diff for robustness
@@ -160,8 +147,7 @@ export class MarkerTracker {
             const refGray = 0.299 * referenceROI.data[i] + 0.587 * referenceROI.data[i+1] + 0.114 * referenceROI.data[i+2];
             diffSum += Math.abs(curGray - refGray);
         }
-        const avgDiff = diffSum / (currentROI.data.length / 4);
-        return avgDiff > threshold;
+        return diffSum / (currentROI.data.length / 4);
     }
 
     // Template matching: returns true if a good match is found in ROI

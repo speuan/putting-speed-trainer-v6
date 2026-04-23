@@ -38,9 +38,7 @@ Tap **Start Camera**, allow camera permission, then use **Setup Markers**. If yo
 
 Place four distinct high-contrast physical markers on the floor or mat and tap their centers during setup. After setup, the start and finish lines stay fixed at the tapped marker positions.
 
-For performance, the app searches near the last known ball position first and only falls back to the wider marked corridor if it loses the ball.
-
-Recording is currently disabled by default in `v7 no-recording` to keep live ball tracking as light as possible on iPhone.
+Version `v8 gate-timing` uses fixed start/finish gates rather than ball tracking. Set the real distance between the two gates, tap two start-gate markers and two finish-gate markers, then putt through both gates. Speed is calculated from gate distance divided by elapsed gate-crossing time.
 
 ## Check syntax
 

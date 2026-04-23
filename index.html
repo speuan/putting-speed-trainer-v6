@@ -16,7 +16,7 @@
 <body>
     <header class="app-header">
         <h1>Putting Speed Trainer</h1>
-        <span class="version-badge">v7 no-recording</span>
+        <span class="version-badge">v8 gate-timing</span>
     </header>
     <div class="container">
         <div class="video-container">
@@ -27,6 +27,11 @@
             <button id="start-camera-btn">Start Camera</button>
             <button id="switch-camera-btn" disabled>Switch Camera</button>
             <button id="setup-markers-btn" disabled>Setup Markers</button>
+            <label class="field">
+                <span>Gate distance</span>
+                <input id="gate-distance-ft" type="number" inputmode="decimal" min="0.5" step="0.5" value="6">
+                <span>ft</span>
+            </label>
             <p id="instructions"></p>
             <div id="status-container">
                 Status: <span id="status-indicator">Idle</span>
