@@ -11,7 +11,8 @@ export class MarkerTracker {
         this.ball = null;
         this.ballPrevious = null;
         this.ballRegion = null;
-        this.state = 'IDLE'; // IDLE, AWAITING_MARKERS, ARMED
+        this.ballProfile = null;
+        this.state = 'IDLE'; // IDLE, AWAITING_MARKERS, AWAITING_BALL, ARMED
         // Store reference images for start and finish ROIs
         this.referenceStartROI = null;
         this.referenceEndROI = null;
@@ -24,6 +25,7 @@ export class MarkerTracker {
             markers: this.markers,
             ball: this.ball,
             ballPrevious: this.ballPrevious,
+            ballProfile: this.ballProfile,
             loupe: this.currentTouch,
             state: this.state,
         };
@@ -32,6 +34,8 @@ export class MarkerTracker {
     startSetup(progressCallback) {
         this.markers = [];
         this.ball = null;
+        this.ballRegion = null;
+        this.ballProfile = null;
         this.state = 'AWAITING_MARKERS';
         this.isSetup = false;
         if (this.driftCheckInterval) {
@@ -75,15 +79,20 @@ export class MarkerTracker {
 
                 if (this.markers.length === 4) {
                     this.captureMarkerRegions();
-                    this.captureReferenceROIs();
-                    this.isSetup = true;
-                    this.state = 'ARMED';
+                    this.state = 'AWAITING_BALL';
                     progressCallback(this);
-
-                    this.canvas.removeEventListener('touchstart', handleTouchStart);
-                    this.canvas.removeEventListener('touchmove', handleTouchMove);
-                    this.canvas.removeEventListener('touchend', handleTouchEnd);
                 }
+            } else if (this.state === 'AWAITING_BALL') {
+                this.ball = finalPosition;
+                this.captureBallRegion();
+                this.captureReferenceROIs();
+                this.isSetup = true;
+                this.state = 'ARMED';
+                progressCallback(this);
+
+                this.canvas.removeEventListener('touchstart', handleTouchStart);
+                this.canvas.removeEventListener('touchmove', handleTouchMove);
+                this.canvas.removeEventListener('touchend', handleTouchEnd);
             }
         };
 
@@ -99,9 +108,13 @@ export class MarkerTracker {
         const tempCtx = tempCanvas.getContext('2d');
         tempCtx.drawImage(this.videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
 
-        const regionSize = 30; // Same size as markers for now
-        const region = tempCtx.getImageData(this.ball.x - regionSize / 2, this.ball.y - regionSize / 2, regionSize, regionSize);
+        const regionSize = 30;
+        const half = regionSize / 2;
+        const x = Math.max(0, Math.min(tempCanvas.width - regionSize, Math.round(this.ball.x - half)));
+        const y = Math.max(0, Math.min(tempCanvas.height - regionSize, Math.round(this.ball.y - half)));
+        const region = tempCtx.getImageData(x, y, regionSize, regionSize);
         this.ballRegion = region;
+        this.ballProfile = MarkerTracker.buildBallProfile(region);
         console.log('Ball template captured.');
     }
 
@@ -150,7 +163,39 @@ export class MarkerTracker {
         return diffSum / (currentROI.data.length / 4);
     }
 
-    static roiChangeStats(currentROI, referenceROI, pixelThreshold = 30, roi = null) {
+    static buildBallProfile(ballRegion) {
+        const samples = [];
+        const cx = (ballRegion.width - 1) / 2;
+        const cy = (ballRegion.height - 1) / 2;
+        const radius = Math.min(ballRegion.width, ballRegion.height) * 0.45;
+
+        for (let y = 0; y < ballRegion.height; y++) {
+            for (let x = 0; x < ballRegion.width; x++) {
+                if (Math.hypot(x - cx, y - cy) > radius) continue;
+                const idx = (y * ballRegion.width + x) * 4;
+                const gray = 0.299 * ballRegion.data[idx] + 0.587 * ballRegion.data[idx + 1] + 0.114 * ballRegion.data[idx + 2];
+                const maxChannel = Math.max(ballRegion.data[idx], ballRegion.data[idx + 1], ballRegion.data[idx + 2]);
+                const minChannel = Math.min(ballRegion.data[idx], ballRegion.data[idx + 1], ballRegion.data[idx + 2]);
+                samples.push({ gray, saturation: maxChannel - minChannel });
+            }
+        }
+
+        const lowSaturationSamples = samples.filter(sample => sample.saturation < 90);
+        const sorted = (lowSaturationSamples.length >= 20 ? lowSaturationSamples : samples)
+            .sort((a, b) => b.gray - a.gray);
+        const selected = sorted.slice(0, Math.max(20, Math.floor(sorted.length * 0.35)));
+        const meanGray = selected.reduce((sum, sample) => sum + sample.gray, 0) / selected.length;
+        const meanSaturation = selected.reduce((sum, sample) => sum + sample.saturation, 0) / selected.length;
+
+        return {
+            meanGray,
+            minGray: Math.max(70, meanGray - 45),
+            maxSaturation: Math.min(120, meanSaturation + 55),
+            regionSize: ballRegion.width
+        };
+    }
+
+    static roiChangeStats(currentROI, referenceROI, pixelThreshold = 30, roi = null, ballProfile = null) {
         if (!currentROI || !referenceROI) {
             return { avgDiff: 0, changedRatio: 0, changedAvgDiff: 0, changedPixels: 0, brightRatio: 0, brightAvgDelta: 0 };
         }
@@ -187,7 +232,9 @@ export class MarkerTracker {
                 changedPixels += 1;
                 changedDiffSum += diff;
             }
-            if (delta > 35 && curGray > 120 && saturation < 55) {
+            const minBallGray = ballProfile ? ballProfile.minGray : 120;
+            const maxBallSaturation = ballProfile ? ballProfile.maxSaturation : 55;
+            if (delta > pixelThreshold && curGray >= minBallGray && saturation <= maxBallSaturation) {
                 brightPixels += 1;
                 brightDeltaSum += delta;
             }
@@ -528,7 +575,7 @@ export class MarkerTracker {
     }
 
     // Return a mask of significant difference pixels in the ROI (for visualization)
-    static differenceMask(currentROI, referenceROI, threshold = 30, roi = null) {
+    static differenceMask(currentROI, referenceROI, threshold = 30, roi = null, ballProfile = null) {
         if (!currentROI || !referenceROI) return null;
         if (currentROI.width !== referenceROI.width || currentROI.height !== referenceROI.height) return null;
         const mask = new Uint8ClampedArray(currentROI.width * currentROI.height);
@@ -543,7 +590,9 @@ export class MarkerTracker {
                 const maxChannel = Math.max(currentROI.data[idx], currentROI.data[idx + 1], currentROI.data[idx + 2]);
                 const minChannel = Math.min(currentROI.data[idx], currentROI.data[idx + 1], currentROI.data[idx + 2]);
                 const saturation = maxChannel - minChannel;
-                mask[y * currentROI.width + x] = (curGray - refGray > threshold && curGray > 120 && saturation < 55) ? 255 : 0;
+                const minBallGray = ballProfile ? ballProfile.minGray : 120;
+                const maxBallSaturation = ballProfile ? ballProfile.maxSaturation : 55;
+                mask[y * currentROI.width + x] = (curGray - refGray > threshold && curGray >= minBallGray && saturation <= maxBallSaturation) ? 255 : 0;
             }
         }
         return mask;

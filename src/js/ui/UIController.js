@@ -45,6 +45,11 @@ export class UIController {
         this.instructionsEl.textContent = labels[markerIndex] || `Tap marker #${markerIndex + 1}`;
     }
 
+    promptForBall() {
+        this.instructionsEl.textContent = 'Tap the centre of the ball to learn its size and brightness.';
+        this.updateStatus('Setting Ball');
+    }
+
     drawMarker(point) {
         this.ctx.beginPath();
         this.ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);

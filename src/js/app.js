@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getGateDistanceFt() {
         const distance = Number.parseFloat(gateDistanceInputEl.value);
-        return Number.isFinite(distance) && distance > 0 ? distance : 6;
+        return Number.isFinite(distance) && distance > 0 ? distance : 3;
     }
 
     function getCurrentFrameROI(roi) {
@@ -86,12 +86,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (roi && referenceROI) {
                     const currentROI = getCurrentFrameROI(roi);
-                    diffMask = tracker.constructor.differenceMask(currentROI, referenceROI, 35, roi);
-                    const changeStats = tracker.constructor.roiChangeStats(currentROI, referenceROI, 35, roi);
+                    diffMask = tracker.constructor.differenceMask(currentROI, referenceROI, 25, roi, tracker.ballProfile);
+                    const changeStats = tracker.constructor.roiChangeStats(currentROI, referenceROI, 25, roi, tracker.ballProfile);
                     liveScore = changeStats.brightRatio * 100;
-                    diffDetected = changeStats.brightRatio > 0.012 &&
+                    diffDetected = changeStats.brightRatio > 0.006 &&
                         changeStats.brightRatio < 0.35 &&
-                        changeStats.brightAvgDelta > 45;
+                        changeStats.brightAvgDelta > 22;
 
                     if (!hasCrossedStart && diffDetected) {
                         hasCrossedStart = true;
@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ui.showResults(speedMph);
                         ui.updateStatus('Complete');
                         console.log(`Finish gate triggered. Speed: ${speedMph.toFixed(2)} mph`);
-                    } else if (changeStats.brightRatio < 0.004) {
+                    } else if (changeStats.brightRatio < 0.002) {
                         tracker.updateReferenceROI(hasCrossedStart ? 'end' : 'start', currentROI);
                     }
                 }
@@ -181,6 +181,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (markerCount < 4) {
                     ui.promptForMarker(markerCount);
                 }
+            } else if (state.state === 'AWAITING_BALL') {
+                ui.promptForBall();
             } else if (state.state === 'ARMED') {
                 ui.onArmingComplete();
                 isMarkerSetupActive = false;

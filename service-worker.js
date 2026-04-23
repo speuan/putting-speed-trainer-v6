@@ -2,7 +2,7 @@
  * Service Worker for Golf Putting Speed Trainer PWA
  */
 
-const CACHE_NAME = 'putting-speed-v11-disabled';
+const CACHE_NAME = 'putting-speed-v12-disabled';
 const urlsToCache = [
     './',
     './index.html',
