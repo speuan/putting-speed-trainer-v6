@@ -193,10 +193,19 @@ export class UIController {
         this.ctx.strokeStyle = 'rgba(0, 0, 255, 0.7)';
         this.ctx.lineWidth = 2;
         this.ctx.fillStyle = 'rgba(0, 0, 255, 0.15)';
-        const width = roi.maxX - roi.minX;
-        const height = roi.maxY - roi.minY;
-        this.ctx.fillRect(roi.minX, roi.minY, width, height);
-        this.ctx.strokeRect(roi.minX, roi.minY, width, height);
+        if (roi.points) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(roi.points[0].x, roi.points[0].y);
+            roi.points.slice(1).forEach(point => this.ctx.lineTo(point.x, point.y));
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.stroke();
+        } else {
+            const width = roi.maxX - roi.minX;
+            const height = roi.maxY - roi.minY;
+            this.ctx.fillRect(roi.minX, roi.minY, width, height);
+            this.ctx.strokeRect(roi.minX, roi.minY, width, height);
+        }
         this.ctx.restore();
     }
 
@@ -237,7 +246,7 @@ export class UIController {
         this.ctx.fillRect(x, y, boxWidth, boxHeight);
         this.ctx.font = 'bold 20px Arial';
         this.ctx.fillStyle = 'black';
-        this.ctx.fillText(`Changed: ${score.toFixed(1)}%`, x + 10, y + 30);
+        this.ctx.fillText(`White: ${score.toFixed(1)}%`, x + 10, y + 30);
         this.ctx.font = '16px Arial';
         this.ctx.fillText(`Gate: ${diffDetected ? 'YES' : 'NO'}`, x + 10, y + 50);
         this.ctx.restore();

@@ -150,36 +150,56 @@ export class MarkerTracker {
         return diffSum / (currentROI.data.length / 4);
     }
 
-    static roiChangeStats(currentROI, referenceROI, pixelThreshold = 30) {
+    static roiChangeStats(currentROI, referenceROI, pixelThreshold = 30, roi = null) {
         if (!currentROI || !referenceROI) {
-            return { avgDiff: 0, changedRatio: 0, changedAvgDiff: 0, changedPixels: 0 };
+            return { avgDiff: 0, changedRatio: 0, changedAvgDiff: 0, changedPixels: 0, brightRatio: 0, brightAvgDelta: 0 };
         }
         if (currentROI.width !== referenceROI.width || currentROI.height !== referenceROI.height) {
-            return { avgDiff: 0, changedRatio: 0, changedAvgDiff: 0, changedPixels: 0 };
+            return { avgDiff: 0, changedRatio: 0, changedAvgDiff: 0, changedPixels: 0, brightRatio: 0, brightAvgDelta: 0 };
         }
 
         let diffSum = 0;
         let changedDiffSum = 0;
         let changedPixels = 0;
-        const totalPixels = currentROI.data.length / 4;
+        let brightDeltaSum = 0;
+        let brightPixels = 0;
+        let totalPixels = 0;
 
         for (let i = 0; i < currentROI.data.length; i += 4) {
+            const pixelIndex = i / 4;
+            const x = pixelIndex % currentROI.width;
+            const y = Math.floor(pixelIndex / currentROI.width);
+            if (roi && !MarkerTracker.isPointInROIPolygon(x + roi.minX, y + roi.minY, roi)) {
+                continue;
+            }
+
             const curGray = 0.299 * currentROI.data[i] + 0.587 * currentROI.data[i + 1] + 0.114 * currentROI.data[i + 2];
             const refGray = 0.299 * referenceROI.data[i] + 0.587 * referenceROI.data[i + 1] + 0.114 * referenceROI.data[i + 2];
             const diff = Math.abs(curGray - refGray);
+            const delta = curGray - refGray;
+            const maxChannel = Math.max(currentROI.data[i], currentROI.data[i + 1], currentROI.data[i + 2]);
+            const minChannel = Math.min(currentROI.data[i], currentROI.data[i + 1], currentROI.data[i + 2]);
+            const saturation = maxChannel - minChannel;
+            totalPixels += 1;
             diffSum += diff;
 
             if (diff > pixelThreshold) {
                 changedPixels += 1;
                 changedDiffSum += diff;
             }
+            if (delta > 35 && curGray > 120 && saturation < 55) {
+                brightPixels += 1;
+                brightDeltaSum += delta;
+            }
         }
 
         return {
-            avgDiff: diffSum / totalPixels,
-            changedRatio: changedPixels / totalPixels,
+            avgDiff: totalPixels > 0 ? diffSum / totalPixels : 0,
+            changedRatio: totalPixels > 0 ? changedPixels / totalPixels : 0,
             changedAvgDiff: changedPixels > 0 ? changedDiffSum / changedPixels : 0,
-            changedPixels
+            changedPixels,
+            brightRatio: totalPixels > 0 ? brightPixels / totalPixels : 0,
+            brightAvgDelta: brightPixels > 0 ? brightDeltaSum / brightPixels : 0
         };
     }
 
@@ -451,15 +471,30 @@ export class MarkerTracker {
         };
     }
 
-    // Utility to get a rectangular ROI around a line, with separate x and y margins
-    getLineROI(line, marginX = 5, marginY = 40) {
-        // line: {p1: {x, y}, p2: {x, y}}
-        // marginX: pixels to expand horizontally, marginY: vertically
-        const minX = Math.max(0, Math.floor(Math.min(line.p1.x, line.p2.x) - marginX));
-        const maxX = Math.min(this.videoElement.videoWidth, Math.ceil(Math.max(line.p1.x, line.p2.x) + marginX));
-        const minY = Math.max(0, Math.floor(Math.min(line.p1.y, line.p2.y) - marginY));
-        const maxY = Math.min(this.videoElement.videoHeight, Math.ceil(Math.max(line.p1.y, line.p2.y) + marginY));
-        return { minX, maxX, minY, maxY };
+    getLineROI(line, halfThickness = 18, endCap = 4) {
+        const dx = line.p2.x - line.p1.x;
+        const dy = line.p2.y - line.p1.y;
+        const length = Math.hypot(dx, dy) || 1;
+        const ux = dx / length;
+        const uy = dy / length;
+        const nx = -uy;
+        const ny = ux;
+        const start = { x: line.p1.x - ux * endCap, y: line.p1.y - uy * endCap };
+        const end = { x: line.p2.x + ux * endCap, y: line.p2.y + uy * endCap };
+        const points = [
+            { x: start.x + nx * halfThickness, y: start.y + ny * halfThickness },
+            { x: end.x + nx * halfThickness, y: end.y + ny * halfThickness },
+            { x: end.x - nx * halfThickness, y: end.y - ny * halfThickness },
+            { x: start.x - nx * halfThickness, y: start.y - ny * halfThickness }
+        ];
+
+        const xs = points.map(point => point.x);
+        const ys = points.map(point => point.y);
+        const minX = Math.max(0, Math.floor(Math.min(...xs)));
+        const maxX = Math.min(this.videoElement.videoWidth, Math.ceil(Math.max(...xs)));
+        const minY = Math.max(0, Math.floor(Math.min(...ys)));
+        const maxY = Math.min(this.videoElement.videoHeight, Math.ceil(Math.max(...ys)));
+        return { minX, maxX, minY, maxY, points };
     }
 
     // Find the best template match position in the ROI (for live bounding box)
@@ -493,18 +528,39 @@ export class MarkerTracker {
     }
 
     // Return a mask of significant difference pixels in the ROI (for visualization)
-    static differenceMask(currentROI, referenceROI, threshold = 30) {
+    static differenceMask(currentROI, referenceROI, threshold = 30, roi = null) {
         if (!currentROI || !referenceROI) return null;
         if (currentROI.width !== referenceROI.width || currentROI.height !== referenceROI.height) return null;
         const mask = new Uint8ClampedArray(currentROI.width * currentROI.height);
         for (let y = 0; y < currentROI.height; y++) {
             for (let x = 0; x < currentROI.width; x++) {
+                if (roi && !MarkerTracker.isPointInROIPolygon(x + roi.minX, y + roi.minY, roi)) {
+                    continue;
+                }
                 const idx = (y * currentROI.width + x) * 4;
                 const curGray = 0.299 * currentROI.data[idx] + 0.587 * currentROI.data[idx+1] + 0.114 * currentROI.data[idx+2];
                 const refGray = 0.299 * referenceROI.data[idx] + 0.587 * referenceROI.data[idx+1] + 0.114 * referenceROI.data[idx+2];
-                mask[y * currentROI.width + x] = Math.abs(curGray - refGray) > threshold ? 255 : 0;
+                const maxChannel = Math.max(currentROI.data[idx], currentROI.data[idx + 1], currentROI.data[idx + 2]);
+                const minChannel = Math.min(currentROI.data[idx], currentROI.data[idx + 1], currentROI.data[idx + 2]);
+                const saturation = maxChannel - minChannel;
+                mask[y * currentROI.width + x] = (curGray - refGray > threshold && curGray > 120 && saturation < 55) ? 255 : 0;
             }
         }
         return mask;
+    }
+
+    static isPointInROIPolygon(x, y, roi) {
+        if (!roi.points) return true;
+        let inside = false;
+        for (let i = 0, j = roi.points.length - 1; i < roi.points.length; j = i++) {
+            const xi = roi.points[i].x;
+            const yi = roi.points[i].y;
+            const xj = roi.points[j].x;
+            const yj = roi.points[j].y;
+            const intersects = ((yi > y) !== (yj > y)) &&
+                (x < (xj - xi) * (y - yi) / ((yj - yi) || 1e-9) + xi);
+            if (intersects) inside = !inside;
+        }
+        return inside;
     }
 } 

@@ -77,19 +77,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 let referenceROI = null;
                 if (!hasCrossedStart) {
                     // Start ROI
-                    roi = tracker.getLineROI(startLine, 10, 40);
+                    roi = tracker.getLineROI(startLine);
                     referenceROI = referenceStartROI;
                 } else if (!hasCrossedEnd) {
                     // End ROI
-                    roi = tracker.getLineROI(endLine, 10, 40);
+                    roi = tracker.getLineROI(endLine);
                     referenceROI = referenceEndROI;
                 }
                 if (roi && referenceROI) {
                     const currentROI = getCurrentFrameROI(roi);
-                    diffMask = tracker.constructor.differenceMask(currentROI, referenceROI);
-                    const changeStats = tracker.constructor.roiChangeStats(currentROI, referenceROI);
-                    liveScore = changeStats.changedRatio * 100;
-                    diffDetected = changeStats.changedRatio > 0.008 && changeStats.changedAvgDiff > 35;
+                    diffMask = tracker.constructor.differenceMask(currentROI, referenceROI, 35, roi);
+                    const changeStats = tracker.constructor.roiChangeStats(currentROI, referenceROI, 35, roi);
+                    liveScore = changeStats.brightRatio * 100;
+                    diffDetected = changeStats.brightRatio > 0.012 &&
+                        changeStats.brightRatio < 0.35 &&
+                        changeStats.brightAvgDelta > 45;
 
                     if (!hasCrossedStart && diffDetected) {
                         hasCrossedStart = true;
@@ -106,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ui.showResults(speedMph);
                         ui.updateStatus('Complete');
                         console.log(`Finish gate triggered. Speed: ${speedMph.toFixed(2)} mph`);
-                    } else if (changeStats.changedRatio < 0.003) {
+                    } else if (changeStats.brightRatio < 0.004) {
                         tracker.updateReferenceROI(hasCrossedStart ? 'end' : 'start', currentROI);
                     }
                 }

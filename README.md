@@ -38,7 +38,7 @@ Tap **Start Camera**, allow camera permission, then use **Setup Markers**. If yo
 
 Place four distinct high-contrast physical markers on the floor or mat and tap their centers during setup. After setup, the start and finish lines stay fixed at the tapped marker positions.
 
-Version `v10 gate pixels` uses fixed start/finish gates rather than ball tracking. Set the real distance between the two gates, tap two start-gate markers and two finish-gate markers, then putt through both gates. Speed is calculated from gate distance divided by elapsed gate-crossing time. Gate crossing is detected from the percentage of changed pixels in the gate ROI, so a small ball crossing the line can trigger even when the whole ROI average barely changes. This test build unregisters the old service worker to avoid stale JavaScript on iPhone Safari.
+Version `v11 white gate strip` uses fixed start/finish gates rather than ball tracking. Set the real distance between the two gates, tap two start-gate markers and two finish-gate markers, then putt through both gates. Speed is calculated from gate distance divided by elapsed gate-crossing time. Gate crossing is detected from new bright, low-saturation pixels inside a narrow four-sided strip whose long edges run parallel to the gate line. This test build unregisters the old service worker to avoid stale JavaScript on iPhone Safari.
 
 ## Check syntax
 
