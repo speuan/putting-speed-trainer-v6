@@ -87,8 +87,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (roi && referenceROI) {
                     const currentROI = getCurrentFrameROI(roi);
                     diffMask = tracker.constructor.differenceMask(currentROI, referenceROI);
-                    liveScore = tracker.constructor.roiDifferenceScore(currentROI, referenceROI);
-                    diffDetected = liveScore > 30;
+                    const changeStats = tracker.constructor.roiChangeStats(currentROI, referenceROI);
+                    liveScore = changeStats.changedRatio * 100;
+                    diffDetected = changeStats.changedRatio > 0.008 && changeStats.changedAvgDiff > 35;
 
                     if (!hasCrossedStart && diffDetected) {
                         hasCrossedStart = true;
@@ -105,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ui.showResults(speedMph);
                         ui.updateStatus('Complete');
                         console.log(`Finish gate triggered. Speed: ${speedMph.toFixed(2)} mph`);
-                    } else if (!diffDetected) {
+                    } else if (changeStats.changedRatio < 0.003) {
                         tracker.updateReferenceROI(hasCrossedStart ? 'end' : 'start', currentROI);
                     }
                 }

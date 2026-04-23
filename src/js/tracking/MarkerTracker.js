@@ -150,6 +150,39 @@ export class MarkerTracker {
         return diffSum / (currentROI.data.length / 4);
     }
 
+    static roiChangeStats(currentROI, referenceROI, pixelThreshold = 30) {
+        if (!currentROI || !referenceROI) {
+            return { avgDiff: 0, changedRatio: 0, changedAvgDiff: 0, changedPixels: 0 };
+        }
+        if (currentROI.width !== referenceROI.width || currentROI.height !== referenceROI.height) {
+            return { avgDiff: 0, changedRatio: 0, changedAvgDiff: 0, changedPixels: 0 };
+        }
+
+        let diffSum = 0;
+        let changedDiffSum = 0;
+        let changedPixels = 0;
+        const totalPixels = currentROI.data.length / 4;
+
+        for (let i = 0; i < currentROI.data.length; i += 4) {
+            const curGray = 0.299 * currentROI.data[i] + 0.587 * currentROI.data[i + 1] + 0.114 * currentROI.data[i + 2];
+            const refGray = 0.299 * referenceROI.data[i] + 0.587 * referenceROI.data[i + 1] + 0.114 * referenceROI.data[i + 2];
+            const diff = Math.abs(curGray - refGray);
+            diffSum += diff;
+
+            if (diff > pixelThreshold) {
+                changedPixels += 1;
+                changedDiffSum += diff;
+            }
+        }
+
+        return {
+            avgDiff: diffSum / totalPixels,
+            changedRatio: changedPixels / totalPixels,
+            changedAvgDiff: changedPixels > 0 ? changedDiffSum / changedPixels : 0,
+            changedPixels
+        };
+    }
+
     // Template matching: returns true if a good match is found in ROI
     static roiTemplateMatch(currentROI, ballRegion, matchThreshold = 1e6) {
         if (!currentROI || !ballRegion) return false;

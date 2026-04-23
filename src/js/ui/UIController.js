@@ -237,7 +237,7 @@ export class UIController {
         this.ctx.fillRect(x, y, boxWidth, boxHeight);
         this.ctx.font = 'bold 20px Arial';
         this.ctx.fillStyle = 'black';
-        this.ctx.fillText(`Diff: ${score.toFixed(1)}`, x + 10, y + 30);
+        this.ctx.fillText(`Changed: ${score.toFixed(1)}%`, x + 10, y + 30);
         this.ctx.font = '16px Arial';
         this.ctx.fillText(`Gate: ${diffDetected ? 'YES' : 'NO'}`, x + 10, y + 50);
         this.ctx.restore();
