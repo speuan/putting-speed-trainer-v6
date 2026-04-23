@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Putting Speed Trainer</title>
-    <link rel="stylesheet" href="src/css/styles.css">
+    <link rel="stylesheet" href="src/css/styles.css?v=9">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="src/assets/icon.svg" type="image/svg+xml">
     <meta name="theme-color" content="#000000">
@@ -16,7 +16,7 @@
 <body>
     <header class="app-header">
         <h1>Putting Speed Trainer</h1>
-        <span class="version-badge">v8 gate-timing</span>
+        <span class="version-badge">v9 no-cache gate-timing</span>
     </header>
     <div class="container">
         <div class="video-container">
@@ -50,18 +50,21 @@
             </div>
         </div>
     </div>
-    <script type="module" src="src/js/app.js"></script>
+    <script type="module" src="src/js/app.js?v=9"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./service-worker.js')
-                    .then(registration => {
-                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                    })
-                    .catch(error => {
-                        console.log('ServiceWorker registration failed: ', error);
-                    });
+                navigator.serviceWorker.getRegistrations()
+                    .then(registrations => Promise.all(registrations.map(registration => registration.unregister())))
+                    .then(() => console.log('Service workers unregistered for no-cache test build.'))
+                    .catch(error => console.log('Service worker cleanup failed: ', error));
             });
+        }
+        if ('caches' in window) {
+            caches.keys()
+                .then(keys => Promise.all(keys.map(key => caches.delete(key))))
+                .then(() => console.log('Old app caches cleared for no-cache test build.'))
+                .catch(error => console.log('Cache cleanup failed: ', error));
         }
     </script>
 </body>
