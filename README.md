@@ -38,7 +38,7 @@ Tap **Start Camera**, allow camera permission, then use **Setup Markers**. If yo
 
 Place four distinct high-contrast physical markers on the floor or mat and tap their centers during setup. After setup, the start and finish lines stay fixed at the tapped marker positions.
 
-Version `v12 sampled ball gate` uses fixed start/finish gates rather than live ball tracking. Set the real distance between the two gates, tap two start-gate markers, two finish-gate markers, then tap the ball so the app can sample its size, colour, and brightness. Speed is calculated from gate distance divided by elapsed gate-crossing time. Gate crossing is detected from new ball-like pixels inside a narrow four-sided strip whose long edges run parallel to the gate line. This test build unregisters the old service worker to avoid stale JavaScript on iPhone Safari.
+Version `v13 next putt` keeps the fixed start/finish gate flow from `v12 sampled ball gate`, and adds a `Next Putt` action after each result so you can re-arm for another putt without redoing marker and ball setup. Set the real distance between the two gates, tap two start-gate markers, two finish-gate markers, then tap the ball so the app can sample its size, colour, and brightness. After a result, tap `Next Putt`, reset the ball, and hit the next putt through the same gates. This test build unregisters the old service worker to avoid stale JavaScript on iPhone Safari.
 
 ## Check syntax
 
