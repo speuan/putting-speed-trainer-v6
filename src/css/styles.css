@@ -148,7 +148,8 @@ button:disabled {
 
 #start-camera-btn,
 #switch-camera-btn,
-#setup-markers-btn {
+#setup-markers-btn,
+#next-putt-btn {
     width: 100%;
     margin: 0 0 10px;
 }

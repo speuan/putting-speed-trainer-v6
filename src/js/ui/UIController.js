@@ -7,6 +7,7 @@ export class UIController {
         this.statusIndicatorEl = options.statusIndicatorEl;
         this.resultsContainerEl = options.resultsContainerEl;
         this.speedDisplayEl = options.speedDisplayEl;
+        this.nextPuttBtn = options.nextPuttBtn;
         this.canvas = options.canvas;
         this.ctx = this.canvas.getContext('2d');
         this.logContainerEl = document.getElementById('log-container');
@@ -275,6 +276,15 @@ export class UIController {
         this.speedDisplayEl.textContent = speed.toFixed(2);
         this.resultsContainerEl.style.display = 'block';
         this.hideReplay(); // Hide replay if a new result is shown
+    }
+
+    resetForNextPutt() {
+        this.resultsContainerEl.style.display = 'none';
+        this.recordingControlsEl.innerHTML = '';
+        this.hideReplay();
+        this.clearLogs();
+        this.instructionsEl.textContent = 'Re-armed. Reset the ball and roll the next putt through the gates.';
+        this.updateStatus('Armed');
     }
 
     displayRecordingControls(blob, onAnalyze) {

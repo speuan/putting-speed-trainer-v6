@@ -34,6 +34,7 @@ export class MarkerTracker {
     startSetup(progressCallback) {
         this.markers = [];
         this.ball = null;
+        this.ballPrevious = null;
         this.ballRegion = null;
         this.ballProfile = null;
         this.state = 'AWAITING_MARKERS';
@@ -99,6 +100,19 @@ export class MarkerTracker {
         this.canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
         this.canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
         this.canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+    }
+
+    rearm() {
+        if (!this.isSetup || this.markers.length !== 4 || !this.ballProfile) {
+            return false;
+        }
+
+        this.ballPrevious = null;
+        this.currentTouch = null;
+        this.trackMarkers();
+        this.captureReferenceROIs();
+        this.state = 'ARMED';
+        return true;
     }
 
     captureBallRegion() {

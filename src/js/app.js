@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusIndicatorEl = document.getElementById('status-indicator');
     const resultsContainerEl = document.getElementById('results-container');
     const speedDisplayEl = document.getElementById('speed-display');
+    const nextPuttBtn = document.getElementById('next-putt-btn');
     const gateDistanceInputEl = document.getElementById('gate-distance-ft');
     const recordingControlsEl = document.getElementById('recording-controls');
     const replayContainerEl = document.getElementById('replay-container');
@@ -31,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
         statusIndicatorEl,
         resultsContainerEl,
         speedDisplayEl,
+        nextPuttBtn,
         canvas: canvasElement,
         recordingControlsEl,
         replayContainerEl,
@@ -59,6 +61,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const tempCtx = tempCanvas.getContext('2d');
         tempCtx.drawImage(videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
         return tempCtx.getImageData(roi.minX, roi.minY, roi.maxX - roi.minX, roi.maxY - roi.minY);
+    }
+
+    function resetRunState() {
+        hasCrossedStart = false;
+        hasCrossedEnd = false;
+        startTimeMs = null;
+        finishTimeMs = null;
     }
 
     function animationLoop() {
@@ -162,10 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupMarkersBtn.addEventListener('click', async () => {
         isMarkerSetupActive = true;
-        hasCrossedStart = false;
-        hasCrossedEnd = false;
-        startTimeMs = null;
-        finishTimeMs = null;
+        resetRunState();
         resultsContainerEl.style.display = 'none'; // Hide old results
         recordingControlsEl.innerHTML = ''; // Clear old controls
         ui.clearLogs();
@@ -190,5 +196,16 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         
         tracker.startSetup(progressCallback);
+    });
+
+    nextPuttBtn.addEventListener('click', () => {
+        resetRunState();
+        if (!tracker.rearm()) {
+            ui.updateStatus('Setup Required');
+            instructionsEl.textContent = 'Set up the markers and ball again before starting the next putt.';
+            return;
+        }
+
+        ui.resetForNextPutt();
     });
 }); 
